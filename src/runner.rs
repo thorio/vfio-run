@@ -1,4 +1,4 @@
-use crate::{context::Context, virsh};
+use crate::{context::Context, modprobe, virsh};
 use anyhow::Result;
 use log::*;
 use std::process::Command;
@@ -6,7 +6,7 @@ use std::process::Command;
 const QEMU_CMD: &str = "qemu-system-x86_64";
 
 pub fn run(context: Context) -> Result<(), ()> {
-	unbind_pci(&context.pci)?;
+	detach_devices(&context)?;
 
 	info!("starting qemu");
 
@@ -21,10 +21,57 @@ pub fn run(context: Context) -> Result<(), ()> {
 		return Err(());
 	}
 
-	rebind_pci(&context.pci)
+	// errors at this stage don't really need to be handled anymore,
+	// the program will exit either way.
+	rebind_pci(&context.pci).ok();
+	reload_drivers(context.unload_drivers.as_ref()).ok();
+
+	Ok(())
 }
 
-fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
+fn detach_devices(context: &Context) -> Result<(), ()> {
+	if unload_drivers(context.unload_drivers.as_ref()).is_err() {
+		info!("attempting to reload drivers");
+		reload_drivers(context.unload_drivers.as_ref()).ok();
+		return Err(());
+	}
+
+	if let Err(unbound) = unbind_pci(&context.pci) {
+		if !unbound.is_empty() {
+			info!("attempting to rebind pci devices");
+			rebind_pci(&unbound).ok();
+			reload_drivers(context.unload_drivers.as_ref()).ok();
+		}
+
+		return Err(());
+	}
+
+	Ok(())
+}
+
+fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
+	if let Some(drivers) = drivers {
+		if let Err(msg) = modprobe::unload(drivers) {
+			error!("unloading {}", msg);
+			return Err(());
+		}
+	}
+
+	Ok(())
+}
+
+fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
+	if let Some(drivers) = drivers {
+		if let Err(msg) = modprobe::load(drivers) {
+			error!("loading {}", msg);
+			return Err(());
+		}
+	}
+
+	Ok(())
+}
+
+fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
 	let mut unbound = vec![];
 
 	if addressses.is_empty() {
@@ -39,15 +86,7 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 
 		if result.is_err() {
 			error!("pci unbind {}", result.unwrap_err());
-
-			if unbound.is_empty() {
-				return Err(());
-			}
-
-			info!("attempting to rebind pci devices");
-
-			rebind_pci(&unbound)?;
-			return Err(());
+			return Err(unbound);
 		}
 
 		unbound.push(addr)

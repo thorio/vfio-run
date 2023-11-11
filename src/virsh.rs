@@ -19,7 +19,7 @@ pub fn run_cmd(verb: &str, pci_address: &str) -> Result<()> {
 	}
 
 	let stderr = std::str::from_utf8(&output.stderr).unwrap_or("<conversion errror: stderr was not valid utf8>");
-	Err(anyhow!("virsh invocation failure: {}", stderr))
+	Err(anyhow!("virsh invocation failure: {}", stderr.trim()))
 }
 
 pub fn convert_pci_address(address: &str) -> String {

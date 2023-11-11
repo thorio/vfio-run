@@ -5,6 +5,7 @@ use nix::unistd::Uid;
 
 mod cli;
 mod context;
+mod modprobe;
 mod runner;
 mod util;
 mod virsh;
@@ -44,6 +45,7 @@ fn main() {
 	runner::run(context).ok();
 }
 
+// AMD iGPU
 fn apply_light_config(context: ContextBuilder) -> ContextBuilder {
 	context
 		.with_ram("8G")
@@ -51,11 +53,13 @@ fn apply_light_config(context: ContextBuilder) -> ContextBuilder {
 		.with_pci_device("0000:10:00.1")
 }
 
+// NVIDIA GPU
 fn apply_full_config(context: ContextBuilder) -> ContextBuilder {
 	context
 		.with_ram("24G")
 		.with_pci_device("0000:01:00.0")
 		.with_pci_device("0000:01:00.1")
+		.with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"])
 }
 
 fn init_logger(debug: bool) {

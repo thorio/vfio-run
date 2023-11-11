@@ -43,9 +43,10 @@ enum Networking {
 #[derive(Debug)]
 pub struct Context {
 	pub env: HashMap<String, String>,
-	pub pci: Vec<String>,
 	pub args: Vec<String>,
+	pub pci: Vec<String>,
 	pub cpu_affinity: Option<String>,
+	pub unload_drivers: Option<Vec<String>>,
 }
 
 #[derive(Debug)]
@@ -59,6 +60,7 @@ pub struct ContextBuilder {
 	networking: Networking,
 	disks: Vec<Disk>,
 	pci: Vec<String>,
+	unload_drivers: Option<Vec<String>>,
 	usb: Vec<UsbAddress>,
 	cpu_affinity: Option<String>,
 }
@@ -75,6 +77,7 @@ impl Default for ContextBuilder {
 			networking: Networking::Default,
 			disks: vec![],
 			pci: vec![],
+			unload_drivers: None,
 			usb: vec![],
 			cpu_affinity: None,
 		}
@@ -134,6 +137,12 @@ impl ContextBuilder {
 		self
 	}
 
+	pub fn with_unloaded_drivers<T: Into<String>>(mut self, drivers: Vec<T>) -> Self {
+		let drivers = drivers.into_iter().map(|d| d.into()).collect::<Vec<_>>();
+		self.unload_drivers = Some(drivers);
+		self
+	}
+
 	pub fn with_graphics(mut self) -> Self {
 		self.graphics = Graphics::Virtio;
 		self
@@ -154,9 +163,10 @@ impl ContextBuilder {
 
 		Context {
 			env: env_writer.get_envs(),
-			pci: self.pci,
 			args: arg_writer.get_args(),
+			pci: self.pci,
 			cpu_affinity: self.cpu_affinity,
+			unload_drivers: self.unload_drivers,
 		}
 	}
 }
