@@ -37,7 +37,11 @@ enum Audio {
 
 #[derive(Debug)]
 enum Networking {
-	Default,
+	None,
+	/// Compatible with Windows out-of-the box, but high CPU overhead.
+	User,
+	/// Less overhead, but requires driver installation on guest.
+	VfioUser,
 }
 
 #[derive(Debug)]
@@ -74,7 +78,7 @@ impl Default for ContextBuilder {
 			bios_type: BiosType::Default,
 			graphics: Graphics::None,
 			audio: Audio::None,
-			networking: Networking::Default,
+			networking: Networking::None,
 			disks: vec![],
 			pci: vec![],
 			unload_drivers: None,
@@ -126,6 +130,17 @@ impl ContextBuilder {
 		self
 	}
 
+	pub fn with_vfio_user_networking(mut self) -> Self {
+		self.networking = Networking::VfioUser;
+		self
+	}
+
+	#[allow(unused)]
+	pub fn with_user_networking(mut self) -> Self {
+		self.networking = Networking::User;
+		self
+	}
+
 	#[allow(unused)]
 	pub fn with_usb_device(mut self, vendor_id: u16, product_id: u16) -> Self {
 		self.usb.push(UsbAddress { vendor_id, product_id });
@@ -157,6 +172,7 @@ impl ContextBuilder {
 		add_bios(&mut arg_writer, self.bios_type);
 		add_graphics(&mut arg_writer, self.graphics);
 		add_audio(&mut arg_writer, &mut env_writer, self.audio);
+		add_networking(&mut arg_writer, self.networking);
 		add_pci(&mut arg_writer, &self.pci);
 		add_disks(&mut arg_writer, self.disks);
 		add_usb(&mut arg_writer, self.usb);
@@ -211,10 +227,10 @@ fn add_bios(writer: &mut ArgWriter, bios: BiosType) {
 }
 
 fn add_graphics(writer: &mut ArgWriter, graphics: Graphics) {
-	_ = match graphics {
+	match graphics {
 		Graphics::None => writer.push_many(vec!["-nographic", "-vga", "none"]),
 		Graphics::Virtio => writer.push_many(vec!["-vga", "virtio"]),
-	}
+	};
 }
 
 fn add_audio(writer: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
@@ -232,6 +248,20 @@ fn add_audio(writer: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
 				"-device",
 				"hda-output,audiodev=pw,mixer=off",
 			]);
+		}
+	}
+}
+
+fn add_networking(writer: &mut ArgWriter, networking: Networking) {
+	match networking {
+		Networking::None => {
+			writer.push_many(vec!["-nic", "none"]);
+		}
+		Networking::User => {
+			writer.push_many(vec!["-nic", "model=e1000"]);
+		}
+		Networking::VfioUser => {
+			writer.push_many(vec!["-nic", "model=virtio-net-pci"]);
 		}
 	}
 }

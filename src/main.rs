@@ -21,18 +21,19 @@ fn main() {
 
 	let mut builder = ContextBuilder::default()
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
-		.with_smp("sockets=1,cores=6,threads=2")
-		.with_cpu_affinity("0-5,8-13")
+		.with_smp("sockets=1,cores=4,threads=2")
+		.with_ram("8G")
 		.with_ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
 		.with_vfio_disk("/dev/sdd")
-		.with_pipewire("/run/user/1000");
+		.with_pipewire("/run/user/1000")
+		.with_vfio_user_networking();
 
 	if cli.window {
 		builder = builder.with_graphics();
 	}
 
 	let builder = match cli.configuration {
-		Configurations::Foil => builder.with_ram("8G"),
+		Configurations::Foil => builder,
 		Configurations::Thin => apply_light_config(builder),
 		Configurations::Fat => apply_full_config(builder),
 	};
@@ -47,16 +48,15 @@ fn main() {
 
 // AMD iGPU
 fn apply_light_config(context: ContextBuilder) -> ContextBuilder {
-	context
-		.with_ram("8G")
-		.with_pci_device("0000:10:00.0")
-		.with_pci_device("0000:10:00.1")
+	context.with_pci_device("0000:10:00.0").with_pci_device("0000:10:00.1")
 }
 
 // NVIDIA GPU
 fn apply_full_config(context: ContextBuilder) -> ContextBuilder {
 	context
 		.with_ram("24G")
+		.with_smp("sockets=1,cores=6,threads=2")
+		.with_cpu_affinity("0-5,8-13")
 		.with_pci_device("0000:01:00.0")
 		.with_pci_device("0000:01:00.1")
 		.with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"])
