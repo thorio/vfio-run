@@ -1,6 +1,6 @@
 use crate::{context::Context, virsh};
 use anyhow::Result;
-use log::{error, info};
+use log::*;
 use std::process::Command;
 
 const QEMU_CMD: &str = "qemu-system-x86_64";
@@ -34,6 +34,7 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 	info!("unbinding pci devices");
 
 	for addr in addressses.iter().map(|a| a.as_ref()) {
+		debug!("unbinding {addr}");
 		let result = virsh::unbind_pci(addr);
 
 		if result.is_err() {
@@ -65,6 +66,7 @@ fn rebind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 	let mut had_error = false;
 
 	for addr in addressses.iter().map(|a| a.as_ref()) {
+		debug!("rebinding {addr}");
 		let result = virsh::rebind_pci(addr);
 
 		// do not cancel rebind over one error, attempt rebinding the rest as well!

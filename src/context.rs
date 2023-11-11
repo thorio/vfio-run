@@ -5,36 +5,42 @@ use std::{
 
 use crate::util::{ArgWriter, EnvWriter};
 
+#[derive(Debug)]
 struct UsbAddress {
 	vendor_id: u16,
 	product_id: u16,
 }
 
-#[allow(unused)]
+#[derive(Debug)]
 enum Graphics {
 	None,
 	Virtio,
 }
 
+#[derive(Debug)]
 enum BiosType {
 	Default,
 	Ovmf(PathBuf),
 }
 
+#[derive(Debug)]
 enum Disk {
 	Raw(PathBuf),
 	Virtio(PathBuf),
 }
 
+#[derive(Debug)]
 enum Audio {
 	None,
 	Pipewire(PathBuf),
 }
 
+#[derive(Debug)]
 enum Networking {
 	Default,
 }
 
+#[derive(Debug)]
 pub struct Context {
 	pub env: HashMap<String, String>,
 	pub pci: Vec<String>,
@@ -42,6 +48,7 @@ pub struct Context {
 	pub cpu_affinity: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct ContextBuilder {
 	cpu: Option<String>,
 	smp: Option<String>,

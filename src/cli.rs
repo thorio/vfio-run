@@ -4,7 +4,7 @@ pub fn parse() -> Args {
 	Args::parse()
 }
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 pub struct Args {
@@ -14,9 +14,13 @@ pub struct Args {
 	/// open qemu GUI
 	#[arg(long)]
 	pub window: bool,
+
+	/// enable debug loglevel
+	#[arg(long)]
+	pub debug: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Configurations {
 	/// start with no GPU
 	Foil,

@@ -1,5 +1,7 @@
 use cli::Configurations;
 use context::ContextBuilder;
+use log::*;
+use nix::unistd::Uid;
 
 mod cli;
 mod context;
@@ -9,8 +11,12 @@ mod virsh;
 
 fn main() {
 	let cli = cli::parse();
+	init_logger(cli.debug);
+	debug!("{:?}", cli);
 
-	init_logger();
+	if !Uid::effective().is_root() {
+		warn!("running as non-root, here be dragons");
+	}
 
 	let mut builder = ContextBuilder::default()
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
@@ -30,7 +36,11 @@ fn main() {
 		Configurations::Fat => apply_full_config(builder),
 	};
 
+	debug!("{:?}", builder);
+
 	let context = builder.build();
+	debug!("{:?}", context);
+
 	runner::run(context).ok();
 }
 
@@ -48,10 +58,10 @@ fn apply_full_config(context: ContextBuilder) -> ContextBuilder {
 		.with_pci_device("0000:01:00.1")
 }
 
-fn init_logger() {
+fn init_logger(debug: bool) {
 	stderrlog::new()
 		.timestamp(stderrlog::Timestamp::Off)
-		.verbosity(4)
+		.verbosity(if debug { 3 } else { 2 })
 		.init()
 		.expect("logger already initialized");
 }
