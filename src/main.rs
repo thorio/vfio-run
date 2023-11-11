@@ -5,6 +5,7 @@ mod cli;
 mod context;
 mod runner;
 mod util;
+mod virsh;
 
 fn main() {
 	let cli = cli::parse();
@@ -30,7 +31,7 @@ fn main() {
 	};
 
 	let context = builder.build();
-	runner::run(context);
+	runner::run(context).ok();
 }
 
 fn apply_light_config(context: ContextBuilder) -> ContextBuilder {
@@ -50,6 +51,7 @@ fn apply_full_config(context: ContextBuilder) -> ContextBuilder {
 fn init_logger() {
 	stderrlog::new()
 		.timestamp(stderrlog::Timestamp::Off)
+		.verbosity(4)
 		.init()
 		.expect("logger already initialized");
 }

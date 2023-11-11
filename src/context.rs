@@ -155,7 +155,15 @@ impl ContextBuilder {
 }
 
 fn add_defaults(writer: &mut ArgWriter) {
-	writer.push("-enable-kvm");
+	writer.push_many(vec![
+		"-enable-kvm",
+		"-serial",
+		"none",
+		"-mon",
+		"chardev=char0,mode=readline",
+		"-chardev",
+		"stdio,id=char0,mux=on",
+	]);
 }
 
 fn add_system(writer: &mut ArgWriter, cpu: Option<String>, smp: Option<String>, ram: String) {
