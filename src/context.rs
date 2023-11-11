@@ -1,9 +1,6 @@
-use std::{
-	collections::HashMap,
-	path::{Path, PathBuf},
-};
-
 use crate::util::{ArgWriter, EnvWriter};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 struct UsbAddress {
@@ -14,33 +11,38 @@ struct UsbAddress {
 #[derive(Debug)]
 enum Graphics {
 	None,
+	/// Virtio VGA device with GTK interface. Requires running display server.
 	Virtio,
 }
 
 #[derive(Debug)]
 enum BiosType {
 	Default,
+	/// Boot in UEFI mode. Argument is the path to OVMF.fd; Install edk2-ovmf on arch.
 	Ovmf(PathBuf),
 }
 
 #[derive(Debug)]
 enum Disk {
+	/// Compatible with Windows out-of-the box, but slow performance.
 	Raw(PathBuf),
+	/// Faster, but requires driver installation on guest.
 	Virtio(PathBuf),
 }
 
 #[derive(Debug)]
 enum Audio {
 	None,
+	/// Argument is the run dir, typically /run/user/$UID
 	Pipewire(PathBuf),
 }
 
 #[derive(Debug)]
 enum Networking {
 	None,
-	/// Compatible with Windows out-of-the box, but high CPU overhead.
+	/// Compatible with Windows out-of-the box, but high CPU overhead and wonky performance.
 	User,
-	/// Less overhead, but requires driver installation on guest.
+	/// Less overhead, more stable, but requires driver installation on guest.
 	VfioUser,
 }
 
