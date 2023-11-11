@@ -1,0 +1,9 @@
+{
+	"name": "vfio-run",
+	"image": "mcr.microsoft.com/devcontainers/rust:0-1-bullseye",
+	"customizations": {
+		"vscode": {
+			"extensions": ["shardulm94.trailing-spaces"]
+		}
+	}
+}

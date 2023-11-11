@@ -1,0 +1,16 @@
+{
+	"editor.insertSpaces": false,
+	"editor.tabSize": 4,
+	"files.insertFinalNewline": true,
+
+	"[yaml]": {
+		"editor.insertSpaces": true,
+		"editor.tabSize": 2,
+	},
+
+	"files.exclude": {
+		"target": true,
+	},
+
+	"rust-analyzer.check.command": "clippy",
+}
