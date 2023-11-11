@@ -19,6 +19,16 @@ fn main() {
 		warn!("running as non-root, here be dragons");
 	}
 
+	let builder = get_builder(cli);
+	debug!("{:?}", builder);
+
+	let context = builder.build();
+	debug!("{:?}", context);
+
+	runner::run(context).ok();
+}
+
+fn get_builder(cli: cli::Args) -> ContextBuilder {
 	let mut builder = ContextBuilder::default()
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.with_smp("sockets=1,cores=4,threads=2")
@@ -32,18 +42,11 @@ fn main() {
 		builder = builder.with_graphics();
 	}
 
-	let builder = match cli.configuration {
+	match cli.configuration {
 		Configurations::Foil => builder,
 		Configurations::Thin => apply_light_config(builder),
 		Configurations::Fat => apply_full_config(builder),
-	};
-
-	debug!("{:?}", builder);
-
-	let context = builder.build();
-	debug!("{:?}", context);
-
-	runner::run(context).ok();
+	}
 }
 
 // AMD iGPU

@@ -14,11 +14,10 @@ pub fn run(context: Context) -> Result<(), ()> {
 		.args(context.args)
 		.envs(context.env)
 		.spawn()
-		.map(|mut handle| handle.wait());
+		.and_then(|mut handle| handle.wait());
 
 	if let Err(e) = result {
 		error!("error running qemu: {}", e);
-		return Err(());
 	}
 
 	// errors at this stage don't really need to be handled anymore,
