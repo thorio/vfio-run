@@ -6,6 +6,7 @@ use std::process::Command;
 const QEMU_CMD: &str = "qemu-system-x86_64";
 
 pub fn run(context: Context) -> Result<(), ()> {
+	ignore_sigint();
 	detach_devices(&context)?;
 
 	info!("starting qemu");
@@ -26,6 +27,14 @@ pub fn run(context: Context) -> Result<(), ()> {
 	reload_drivers(context.unload_drivers.as_ref()).ok();
 
 	Ok(())
+}
+
+fn ignore_sigint() {
+	// We ignore SIGINT, instead passing it to the wrapped QEMU process
+	// and then cleaning up after it exits
+	if let Err(err) = ctrlc::set_handler(|| ()) {
+		warn!("error setting SIGINT handler: {err}")
+	}
 }
 
 fn detach_devices(context: &Context) -> Result<(), ()> {
