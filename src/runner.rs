@@ -1,12 +1,14 @@
-use crate::{context::Context, modprobe, virsh};
+use crate::context::Context;
+use crate::{modprobe, virsh};
 use anyhow::Result;
 use log::*;
 use std::process::Command;
 
 const QEMU_CMD: &str = "qemu-system-x86_64";
 
-pub fn run(context: Context) -> Result<(), ()> {
+pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	ignore_sigint();
+
 	detach_devices(&context)?;
 
 	info!("starting qemu");
@@ -21,10 +23,12 @@ pub fn run(context: Context) -> Result<(), ()> {
 		error!("error running qemu: {}", e);
 	}
 
-	// errors at this stage don't really need to be handled anymore,
-	// the program will exit either way.
-	rebind_pci(&context.pci).ok();
-	reload_drivers(context.unload_drivers.as_ref()).ok();
+	if !skip_attach {
+		// errors at this stage don't really need to be handled anymore,
+		// we just try to restore what we can and exit.
+		rebind_pci(&context.pci).ok();
+		reload_drivers(context.unload_drivers.as_ref()).ok();
+	}
 
 	Ok(())
 }

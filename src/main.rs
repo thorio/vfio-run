@@ -1,4 +1,4 @@
-use cli::Configurations;
+use cli::{Args, Configurations};
 use context::ContextBuilder;
 use log::*;
 use nix::unistd::Uid;
@@ -19,16 +19,18 @@ fn main() {
 		warn!("running as non-root, here be dragons");
 	}
 
-	let builder = get_builder(cli);
+	let builder = get_builder(&cli);
 	debug!("{:?}", builder);
 
 	let context = builder.build();
 	debug!("{:?}", context);
 
-	runner::run(context).ok();
+	if runner::run(context, cli.skip_attach).is_ok() {
+		info!("exit successful")
+	}
 }
 
-fn get_builder(cli: cli::Args) -> ContextBuilder {
+fn get_builder(cli: &Args) -> ContextBuilder {
 	let mut builder = ContextBuilder::default()
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.with_smp("sockets=1,cores=4,threads=2")
