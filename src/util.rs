@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use crate::context::TmpFile;
+use nix::sys::stat::Mode;
+use nix::unistd::{Gid, Uid};
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Default)]
 pub struct ArgWriter {
@@ -44,5 +47,26 @@ impl EnvWriter {
 
 	pub fn get_envs(self) -> HashMap<String, String> {
 		self.env
+	}
+}
+
+#[derive(Default)]
+pub struct TmpFileWriter {
+	files: Vec<TmpFile>,
+}
+
+impl TmpFileWriter {
+	pub fn add(&mut self, path: impl Into<PathBuf>, uid: Uid, gid: Gid, mode: Mode) -> &'_ mut Self {
+		self.files.push(TmpFile {
+			path: path.into(),
+			uid,
+			gid,
+			mode,
+		});
+		self
+	}
+
+	pub fn get_tmp_files(self) -> Vec<TmpFile> {
+		self.files
 	}
 }

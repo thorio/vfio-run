@@ -1,4 +1,6 @@
-use crate::util::{ArgWriter, EnvWriter};
+use crate::util::{ArgWriter, EnvWriter, TmpFileWriter};
+use nix::sys::stat::Mode;
+use nix::unistd::{Gid, Uid};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -6,6 +8,14 @@ use std::path::{Path, PathBuf};
 struct UsbAddress {
 	vendor_id: u16,
 	product_id: u16,
+}
+
+#[derive(Debug)]
+pub struct TmpFile {
+	pub path: PathBuf,
+	pub uid: Uid,
+	pub gid: Gid,
+	pub mode: Mode,
 }
 
 #[derive(Debug)]
@@ -47,10 +57,17 @@ enum Networking {
 }
 
 #[derive(Debug)]
+enum LookingGlass {
+	No,
+	Yes(Uid, Gid),
+}
+
+#[derive(Debug)]
 pub struct Context {
 	pub env: HashMap<String, String>,
 	pub args: Vec<String>,
 	pub pci: Vec<String>,
+	pub tmp_files: Vec<TmpFile>,
 	pub cpu_affinity: Option<String>,
 	pub unload_drivers: Option<Vec<String>>,
 }
@@ -64,6 +81,7 @@ pub struct ContextBuilder {
 	graphics: Graphics,
 	audio: Audio,
 	networking: Networking,
+	looking_glass: LookingGlass,
 	disks: Vec<Disk>,
 	pci: Vec<String>,
 	unload_drivers: Option<Vec<String>>,
@@ -81,6 +99,7 @@ impl Default for ContextBuilder {
 			graphics: Graphics::None,
 			audio: Audio::None,
 			networking: Networking::None,
+			looking_glass: LookingGlass::No,
 			disks: vec![],
 			pci: vec![],
 			usb: vec![],
@@ -165,11 +184,18 @@ impl ContextBuilder {
 		self
 	}
 
+	pub fn with_looking_glass(mut self, owner: impl Into<Uid>, group: impl Into<Gid>) -> Self {
+		self.looking_glass = LookingGlass::Yes(owner.into(), group.into());
+		self
+	}
+
 	pub fn build(self) -> Context {
 		let mut arg_writer = ArgWriter::default();
 		let mut env_writer = EnvWriter::default();
+		let mut tmp_file_writer = TmpFileWriter::default();
 
 		add_defaults(&mut arg_writer);
+		add_monitor(&mut arg_writer);
 		add_system(&mut arg_writer, self.cpu, self.smp, self.ram);
 		add_bios(&mut arg_writer, self.bios_type);
 		add_graphics(&mut arg_writer, self.graphics);
@@ -178,6 +204,7 @@ impl ContextBuilder {
 		add_pci(&mut arg_writer, &self.pci);
 		add_disks(&mut arg_writer, self.disks);
 		add_usb(&mut arg_writer, self.usb);
+		add_looking_glass(&mut arg_writer, &mut tmp_file_writer, self.looking_glass);
 
 		Context {
 			env: env_writer.get_envs(),
@@ -185,15 +212,17 @@ impl ContextBuilder {
 			pci: self.pci,
 			cpu_affinity: self.cpu_affinity,
 			unload_drivers: self.unload_drivers,
+			tmp_files: tmp_file_writer.get_tmp_files(),
 		}
 	}
 }
 
 fn add_defaults(args: &mut ArgWriter) {
+	args.add_many(vec!["-nodefaults", "-enable-kvm"]);
+}
+
+fn add_monitor(args: &mut ArgWriter) {
 	args.add_many(vec![
-		"-enable-kvm",
-		"-serial",
-		"none",
 		"-mon",
 		"chardev=char0,mode=readline",
 		"-chardev",
@@ -301,4 +330,20 @@ fn add_usb(args: &mut ArgWriter, devices: Vec<UsbAddress>) {
 		);
 		args.add("-device").add(fmt);
 	}
+}
+
+fn add_looking_glass(args: &mut ArgWriter, tmp: &mut TmpFileWriter, config: LookingGlass) {
+	let LookingGlass::Yes(uid, gid) = config else {
+		return;
+	};
+
+	let mode = Mode::from_bits_truncate(0o644);
+	tmp.add("/dev/shm/looking-glass", uid, gid, mode);
+
+	args.add_many(vec![
+		"-device",
+		"ivshmem-plain,memdev=ivshmem,bus=pci.0",
+		"-object",
+		"memory-backend-file,id=ivshmem,share=on,mem-path=/dev/shm/looking-glass,size=32M",
+	]);
 }

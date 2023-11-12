@@ -38,7 +38,8 @@ fn get_builder(cli: &Args) -> ContextBuilder {
 		.with_ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
 		.with_vfio_disk("/dev/sdd")
 		.with_pipewire("/run/user/1000")
-		.with_vfio_user_networking();
+		.with_vfio_user_networking()
+		.with_looking_glass(1000, 1000);
 
 	if cli.window {
 		builder = builder.with_graphics();

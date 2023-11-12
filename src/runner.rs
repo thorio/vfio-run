@@ -1,7 +1,9 @@
-use crate::context::Context;
+use crate::context::{Context, TmpFile};
 use crate::{modprobe, virsh};
 use anyhow::Result;
 use log::*;
+use std::fs::{remove_file, File};
+use std::os::fd::AsRawFd;
 use std::process::Command;
 
 const QEMU_CMD: &str = "qemu-system-x86_64";
@@ -9,6 +11,7 @@ const QEMU_CMD: &str = "qemu-system-x86_64";
 pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	ignore_sigint();
 
+	create_tmp_files(&context.tmp_files)?;
 	detach_devices(&context)?;
 
 	info!("starting qemu");
@@ -39,6 +42,26 @@ fn ignore_sigint() {
 	if let Err(err) = ctrlc::set_handler(|| ()) {
 		warn!("error setting SIGINT handler: {err}")
 	}
+}
+
+fn create_tmp_files(files: &[TmpFile]) -> Result<(), ()> {
+	for file in files {
+		if let Err(err) = create_tmp_file(file) {
+			error!("error creating file {file:?} {err}");
+			return Err(());
+		}
+	}
+
+	Ok(())
+}
+
+fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
+	remove_file(&tmp_file.path).ok();
+	let file = File::create(&tmp_file.path)?;
+	nix::unistd::fchown(file.as_raw_fd(), Some(tmp_file.uid), Some(tmp_file.gid))?;
+	nix::sys::stat::fchmod(file.as_raw_fd(), tmp_file.mode)?;
+
+	Ok(())
 }
 
 fn detach_devices(context: &Context) -> Result<(), ()> {
