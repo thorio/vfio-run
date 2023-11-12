@@ -6,13 +6,13 @@ pub struct ArgWriter {
 }
 
 impl ArgWriter {
-	pub fn push(&mut self, arg: impl Into<String>) -> &'_ mut Self {
+	pub fn add(&mut self, arg: impl Into<String>) -> &'_ mut Self {
 		self.args.push(arg.into());
 
 		self
 	}
 
-	pub fn push_many<T: Into<String>>(&mut self, args: Vec<T>) -> &'_ mut Self {
+	pub fn add_many<T: Into<String>>(&mut self, args: Vec<T>) -> &'_ mut Self {
 		for arg in args.into_iter() {
 			self.args.push(arg.into());
 		}

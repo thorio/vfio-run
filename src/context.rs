@@ -83,8 +83,8 @@ impl Default for ContextBuilder {
 			networking: Networking::None,
 			disks: vec![],
 			pci: vec![],
-			unload_drivers: None,
 			usb: vec![],
+			unload_drivers: None,
 			cpu_affinity: None,
 		}
 	}
@@ -189,8 +189,8 @@ impl ContextBuilder {
 	}
 }
 
-fn add_defaults(writer: &mut ArgWriter) {
-	writer.push_many(vec![
+fn add_defaults(args: &mut ArgWriter) {
+	args.add_many(vec![
 		"-enable-kvm",
 		"-serial",
 		"none",
@@ -201,48 +201,47 @@ fn add_defaults(writer: &mut ArgWriter) {
 	]);
 }
 
-fn add_system(writer: &mut ArgWriter, cpu: Option<String>, smp: Option<String>, ram: String) {
+fn add_system(args: &mut ArgWriter, cpu: Option<String>, smp: Option<String>, ram: String) {
 	if let Some(cpu) = cpu {
-		writer.push("-cpu").push(cpu);
+		args.add("-cpu").add(cpu);
 	}
 
 	if let Some(smp) = smp {
-		writer.push("-smp").push(smp);
+		args.add("-smp").add(smp);
 	}
 
-	writer.push("-m").push(ram);
+	args.add("-m").add(ram);
 }
 
-fn add_bios(writer: &mut ArgWriter, bios: BiosType) {
+fn add_bios(args: &mut ArgWriter, bios: BiosType) {
 	match bios {
 		BiosType::Default => (),
 		BiosType::Ovmf(path) => {
 			let firmware_directory = path.parent().expect("bios file should be in a directory");
 
-			writer
-				.push("-L")
-				.push(firmware_directory.to_string_lossy())
-				.push("-bios")
-				.push(path.to_string_lossy());
+			args.add("-L")
+				.add(firmware_directory.to_string_lossy())
+				.add("-bios")
+				.add(path.to_string_lossy());
 		}
 	}
 }
 
-fn add_graphics(writer: &mut ArgWriter, graphics: Graphics) {
+fn add_graphics(args: &mut ArgWriter, graphics: Graphics) {
 	match graphics {
-		Graphics::None => writer.push_many(vec!["-nographic", "-vga", "none"]),
-		Graphics::Virtio => writer.push_many(vec!["-vga", "virtio"]),
+		Graphics::None => args.add_many(vec!["-nographic", "-vga", "none"]),
+		Graphics::Virtio => args.add_many(vec!["-vga", "virtio"]),
 	};
 }
 
-fn add_audio(writer: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
+fn add_audio(args: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
 	match audio {
 		Audio::None => (),
 		Audio::Pipewire(runtime_dir) => {
 			env.add("PIPEWIRE_RUNTIME_DIR", runtime_dir.to_string_lossy())
 				.add("PIPEWIRE_LATENCY", "128/48000");
 
-			writer.push_many(vec![
+			args.add_many(vec![
 				"-audiodev",
 				"pipewire,id=pw",
 				"-device",
@@ -254,31 +253,31 @@ fn add_audio(writer: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
 	}
 }
 
-fn add_networking(writer: &mut ArgWriter, networking: Networking) {
+fn add_networking(args: &mut ArgWriter, networking: Networking) {
 	match networking {
 		Networking::None => {
-			writer.push_many(vec!["-nic", "none"]);
+			args.add_many(vec!["-nic", "none"]);
 		}
 		Networking::User => {
-			writer.push_many(vec!["-nic", "model=e1000"]);
+			args.add_many(vec!["-nic", "model=e1000"]);
 		}
 		Networking::VfioUser => {
-			writer.push_many(vec!["-nic", "model=virtio-net-pci"]);
+			args.add_many(vec!["-nic", "model=virtio-net-pci"]);
 		}
 	}
 }
 
-fn add_pci(writer: &mut ArgWriter, devices: &[String]) {
+fn add_pci(args: &mut ArgWriter, devices: &[String]) {
 	for address in devices.iter() {
-		writer.push("-device").push(format!("vfio-pci,host={address}"));
+		args.add("-device").add(format!("vfio-pci,host={address}"));
 	}
 }
 
-fn add_disks(writer: &mut ArgWriter, disks: Vec<Disk>) {
+fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
 	for disk in disks.iter() {
 		_ = match disk {
-			Disk::Raw(device) => writer.push("-drive").push(raw_disk(device, "media=disk")),
-			Disk::Virtio(device) => writer.push("-drive").push(raw_disk(device, "if=virtio")),
+			Disk::Raw(device) => args.add("-drive").add(raw_disk(device, "media=disk")),
+			Disk::Virtio(device) => args.add("-drive").add(raw_disk(device, "if=virtio")),
 		};
 	}
 
@@ -288,18 +287,18 @@ fn add_disks(writer: &mut ArgWriter, disks: Vec<Disk>) {
 	}
 }
 
-fn add_usb(writer: &mut ArgWriter, devices: Vec<UsbAddress>) {
+fn add_usb(args: &mut ArgWriter, devices: Vec<UsbAddress>) {
 	if devices.is_empty() {
 		return;
 	}
 
-	writer.push("-usb");
+	args.add("-usb");
 
 	for address in devices.iter() {
 		let fmt = format!(
 			"usb-host,vendorid={:x},productid={:x}",
 			address.vendor_id, address.product_id
 		);
-		writer.push("-device").push(fmt);
+		args.add("-device").add(fmt);
 	}
 }
