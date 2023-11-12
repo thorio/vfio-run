@@ -62,6 +62,12 @@ enum LookingGlass {
 	Yes(Uid, Gid),
 }
 
+#[derive(PartialEq, Debug)]
+enum Spice {
+	No,
+	Yes,
+}
+
 #[derive(Debug)]
 pub struct Context {
 	pub env: HashMap<String, String>,
@@ -82,6 +88,7 @@ pub struct ContextBuilder {
 	audio: Audio,
 	networking: Networking,
 	looking_glass: LookingGlass,
+	spice: Spice,
 	disks: Vec<Disk>,
 	pci: Vec<String>,
 	unload_drivers: Option<Vec<String>>,
@@ -100,6 +107,7 @@ impl Default for ContextBuilder {
 			audio: Audio::None,
 			networking: Networking::None,
 			looking_glass: LookingGlass::No,
+			spice: Spice::No,
 			disks: vec![],
 			pci: vec![],
 			usb: vec![],
@@ -189,6 +197,11 @@ impl ContextBuilder {
 		self
 	}
 
+	pub fn with_spice(mut self) -> Self {
+		self.spice = Spice::Yes;
+		self
+	}
+
 	pub fn build(self) -> Context {
 		let mut arg_writer = ArgWriter::default();
 		let mut env_writer = EnvWriter::default();
@@ -205,6 +218,7 @@ impl ContextBuilder {
 		add_disks(&mut arg_writer, self.disks);
 		add_usb(&mut arg_writer, self.usb);
 		add_looking_glass(&mut arg_writer, &mut tmp_file_writer, self.looking_glass);
+		add_spice(&mut arg_writer, self.spice);
 
 		Context {
 			env: env_writer.get_envs(),
@@ -345,5 +359,20 @@ fn add_looking_glass(args: &mut ArgWriter, tmp: &mut TmpFileWriter, config: Look
 		"ivshmem-plain,memdev=ivshmem,bus=pci.0",
 		"-object",
 		"memory-backend-file,id=ivshmem,share=on,mem-path=/dev/shm/looking-glass,size=32M",
+	]);
+}
+
+fn add_spice(args: &mut ArgWriter, config: Spice) {
+	if config == Spice::No {
+		return;
+	}
+
+	args.add_many(vec![
+		"-spice",
+		"port=5900,disable-ticketing=on",
+		"-device",
+		"virtio-keyboard-pci",
+		"-device",
+		"virtio-mouse-pci",
 	]);
 }

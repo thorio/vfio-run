@@ -39,7 +39,8 @@ fn get_builder(cli: &Args) -> ContextBuilder {
 		.with_vfio_disk("/dev/sdd")
 		.with_pipewire("/run/user/1000")
 		.with_vfio_user_networking()
-		.with_looking_glass(1000, 1000);
+		.with_looking_glass(1000, 1000)
+		.with_spice();
 
 	if cli.window {
 		builder = builder.with_graphics();
