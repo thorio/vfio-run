@@ -2,7 +2,7 @@ use crate::context::{Context, TmpFile};
 use crate::{modprobe, virsh};
 use anyhow::Result;
 use log::*;
-use std::fs::{remove_file, File};
+use std::fs::{self, File};
 use std::os::fd::AsRawFd;
 use std::process::Command;
 
@@ -17,8 +17,8 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	info!("starting qemu");
 
 	let result = get_command(&context)
-		.args(context.args)
-		.envs(context.env)
+		.args(&context.args)
+		.envs(&context.env)
 		.spawn()
 		.and_then(|mut handle| handle.wait());
 
@@ -29,8 +29,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	if !skip_attach {
 		// errors at this stage don't really need to be handled anymore,
 		// we just try to restore what we can and exit.
-		rebind_pci(&context.pci).ok();
-		reload_drivers(context.unload_drivers.as_ref()).ok();
+		reattach_devices(&context)?;
 	}
 
 	Ok(())
@@ -56,7 +55,7 @@ fn create_tmp_files(files: &[TmpFile]) -> Result<(), ()> {
 }
 
 fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
-	remove_file(&tmp_file.path).ok();
+	fs::remove_file(&tmp_file.path).ok();
 	let file = File::create(&tmp_file.path)?;
 	nix::unistd::fchown(file.as_raw_fd(), Some(tmp_file.uid), Some(tmp_file.gid))?;
 	nix::sys::stat::fchmod(file.as_raw_fd(), tmp_file.mode)?;
@@ -64,7 +63,12 @@ fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
 	Ok(())
 }
 
-fn detach_devices(context: &Context) -> Result<(), ()> {
+pub fn reattach_devices(context: &Context) -> Result<(), ()> {
+	rebind_pci(&context.pci)?;
+	reload_drivers(context.unload_drivers.as_ref())
+}
+
+pub fn detach_devices(context: &Context) -> Result<(), ()> {
 	if unload_drivers(context.unload_drivers.as_ref()).is_err() {
 		info!("attempting to reload drivers");
 		reload_drivers(context.unload_drivers.as_ref()).ok();
@@ -86,6 +90,8 @@ fn detach_devices(context: &Context) -> Result<(), ()> {
 
 fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	if let Some(drivers) = drivers {
+		info!("unloading drivers");
+		debug!("unloading {drivers:?}");
 		if let Err(msg) = modprobe::unload(drivers) {
 			error!("unloading {}", msg);
 			return Err(());
@@ -97,6 +103,8 @@ fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 
 fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	if let Some(drivers) = drivers {
+		info!("loading drivers");
+		debug!("loading {drivers:?}");
 		if let Err(msg) = modprobe::load(drivers) {
 			error!("loading {}", msg);
 			return Err(());
