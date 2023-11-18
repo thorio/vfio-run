@@ -21,7 +21,7 @@ pub enum Command {
 	/// Run the VM, detaching and attaching as required.
 	Run {
 		#[arg(value_enum)]
-		configuration: Configuration,
+		profile: Profile,
 
 		/// open qemu GUI
 		#[arg(long, short)]
@@ -35,24 +35,21 @@ pub enum Command {
 	/// Unload drivers and detach devices
 	Detach {
 		#[arg(value_enum)]
-		configuration: Configuration,
+		profile: Profile,
 	},
 
 	/// Reload drivers and reattach devices
 	Attach {
 		#[arg(value_enum)]
-		configuration: Configuration,
+		profile: Profile,
 	},
 }
 
 #[derive(Clone, ValueEnum, Debug)]
-pub enum Configuration {
-	/// start with no GPU
-	Foil,
+pub enum Profile {
+	/// start with virtual VGA
+	Slim,
 
-	/// start with iGPU
-	Thin,
-
-	/// start with dGPU
-	Fat,
+	/// start with GPU passthrough
+	Full,
 }

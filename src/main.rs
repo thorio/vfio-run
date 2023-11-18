@@ -1,4 +1,4 @@
-use cli::{Command, Configuration};
+use cli::{Command, Profile};
 use context::Context;
 use log::*;
 use nix::unistd::Uid;
@@ -22,37 +22,37 @@ fn main() {
 
 	match cli.command {
 		Command::Run {
-			configuration,
+			profile,
 			window,
 			skip_attach,
-		} => run(window, configuration, skip_attach),
-		Command::Detach { configuration } => detach(configuration),
-		Command::Attach { configuration } => attach(configuration),
+		} => run(window, profile, skip_attach),
+		Command::Detach { profile } => detach(profile),
+		Command::Attach { profile } => attach(profile),
 	}
 }
 
-fn detach(configuration: Configuration) {
-	let context = get_context(false, &configuration);
+fn detach(profile: Profile) {
+	let context = get_context(false, &profile);
 
 	runner::detach_devices(&context).ok();
 }
 
-fn attach(configuration: Configuration) {
-	let context = get_context(false, &configuration);
+fn attach(profile: Profile) {
+	let context = get_context(false, &profile);
 
 	runner::reattach_devices(&context).ok();
 }
 
-fn run(window: bool, configuration: Configuration, skip_attach: bool) {
-	let context = get_context(window, &configuration);
+fn run(window: bool, profile: Profile, skip_attach: bool) {
+	let context = get_context(window, &profile);
 
 	if runner::run(context, skip_attach).is_ok() {
 		info!("exit successful")
 	}
 }
 
-fn get_context(window: bool, configuration: &Configuration) -> Context {
-	let builder = config::get_builder(window, configuration);
+fn get_context(window: bool, profile: &Profile) -> Context {
+	let builder = config::get_builder(window, profile);
 	debug!("{:?}", builder);
 
 	let context = builder.build();
