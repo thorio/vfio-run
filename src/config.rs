@@ -1,4 +1,5 @@
-use crate::{cli::Configuration, context::ContextBuilder};
+use crate::cli::Configuration;
+use crate::context::{ContextBuilder, Vga};
 
 pub fn get_builder(window: bool, configuration: &Configuration) -> ContextBuilder {
 	let mut builder = ContextBuilder::default()
@@ -13,14 +14,19 @@ pub fn get_builder(window: bool, configuration: &Configuration) -> ContextBuilde
 		.with_spice();
 
 	if window {
-		builder = builder.with_graphics();
+		builder = builder.with_window();
 	}
 
 	match configuration {
-		Configuration::Foil => builder,
+		Configuration::Foil => apply_foil_config(builder),
 		Configuration::Thin => apply_thin_config(builder),
 		Configuration::Fat => apply_fat_config(builder),
 	}
+}
+
+// virtual VGA only
+fn apply_foil_config(context: ContextBuilder) -> ContextBuilder {
+	context.with_vga(Vga::Qxl)
 }
 
 // AMD iGPU

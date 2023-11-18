@@ -19,16 +19,27 @@ pub struct TmpFile {
 }
 
 #[derive(Debug)]
-enum Graphics {
+#[allow(unused)]
+pub enum Vga {
 	None,
-	/// Virtio VGA device with GTK interface. Requires running display server.
+	/// Standard QEMU VGA device. Compatible out of the box.
+	Standard,
+	/// VirtIO VGA device. I don't think there's a windows driver for this.
 	Virtio,
+	/// QXL VGA device. Compatible with Windows, may need drivers.
+	Qxl,
+}
+
+#[derive(Debug)]
+enum Window {
+	None,
+	/// GTK interface. Requires running display server.
+	Gtk,
 }
 
 #[derive(Debug)]
 enum BiosType {
 	Default,
-	/// Boot in UEFI mode. Argument is the path to OVMF.fd; Install edk2-ovmf on arch.
 	Ovmf(PathBuf),
 }
 
@@ -84,7 +95,8 @@ pub struct ContextBuilder {
 	smp: Option<String>,
 	ram: String,
 	bios_type: BiosType,
-	graphics: Graphics,
+	vga: Vga,
+	window: Window,
 	audio: Audio,
 	networking: Networking,
 	looking_glass: LookingGlass,
@@ -103,7 +115,8 @@ impl Default for ContextBuilder {
 			smp: None,
 			ram: String::from("4G"),
 			bios_type: BiosType::Default,
-			graphics: Graphics::None,
+			vga: Vga::None,
+			window: Window::None,
 			audio: Audio::None,
 			networking: Networking::None,
 			looking_glass: LookingGlass::No,
@@ -117,6 +130,7 @@ impl Default for ContextBuilder {
 	}
 }
 
+#[allow(unused)]
 impl ContextBuilder {
 	pub fn with_cpu(mut self, options: impl Into<String>) -> Self {
 		self.cpu = Some(options.into());
@@ -148,7 +162,6 @@ impl ContextBuilder {
 		self
 	}
 
-	#[allow(unused)]
 	pub fn with_raw_disk(mut self, path: impl Into<PathBuf>) -> Self {
 		self.disks.push(Disk::Raw(path.into()));
 		self
@@ -164,13 +177,11 @@ impl ContextBuilder {
 		self
 	}
 
-	#[allow(unused)]
 	pub fn with_user_networking(mut self) -> Self {
 		self.networking = Networking::User;
 		self
 	}
 
-	#[allow(unused)]
 	pub fn with_usb_device(mut self, vendor_id: u16, product_id: u16) -> Self {
 		self.usb.push(UsbAddress { vendor_id, product_id });
 		self
@@ -187,8 +198,13 @@ impl ContextBuilder {
 		self
 	}
 
-	pub fn with_graphics(mut self) -> Self {
-		self.graphics = Graphics::Virtio;
+	pub fn with_vga(mut self, vga: Vga) -> Self {
+		self.vga = vga;
+		self
+	}
+
+	pub fn with_window(mut self) -> Self {
+		self.window = Window::Gtk;
 		self
 	}
 
@@ -211,7 +227,8 @@ impl ContextBuilder {
 		add_monitor(&mut arg_writer);
 		add_system(&mut arg_writer, self.cpu, self.smp, self.ram);
 		add_bios(&mut arg_writer, self.bios_type);
-		add_graphics(&mut arg_writer, self.graphics);
+		add_vga(&mut arg_writer, self.vga);
+		add_window(&mut arg_writer, self.window);
 		add_audio(&mut arg_writer, &mut env_writer, self.audio);
 		add_networking(&mut arg_writer, self.networking);
 		add_pci(&mut arg_writer, &self.pci);
@@ -270,10 +287,19 @@ fn add_bios(args: &mut ArgWriter, bios: BiosType) {
 	}
 }
 
-fn add_graphics(args: &mut ArgWriter, graphics: Graphics) {
-	match graphics {
-		Graphics::None => args.add_many(vec!["-nographic", "-vga", "none"]),
-		Graphics::Virtio => args.add_many(vec!["-vga", "virtio"]),
+fn add_vga(args: &mut ArgWriter, vga: Vga) {
+	match vga {
+		Vga::None => args.add_many(vec!["-vga", "none"]),
+		Vga::Standard => args.add_many(vec!["-vga", "std"]),
+		Vga::Virtio => args.add_many(vec!["-vga", "virtio"]),
+		Vga::Qxl => args.add_many(vec!["-vga", "qxl"]),
+	};
+}
+
+fn add_window(args: &mut ArgWriter, window: Window) {
+	match window {
+		Window::None => args.add_many(vec!["-display", "none"]),
+		Window::Gtk => args.add_many(vec!["-display", "gtk"]),
 	};
 }
 
@@ -282,7 +308,7 @@ fn add_audio(args: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
 		Audio::None => (),
 		Audio::Pipewire(runtime_dir) => {
 			env.add("PIPEWIRE_RUNTIME_DIR", runtime_dir.to_string_lossy())
-				.add("PIPEWIRE_LATENCY", "128/48000");
+				.add("PIPEWIRE_LATENCY", "512/48000");
 
 			args.add_many(vec![
 				"-audiodev",
