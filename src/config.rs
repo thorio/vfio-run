@@ -6,7 +6,6 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 	let mut builder = ContextBuilder::default()
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.with_ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
-		.with_virtio_disk("/dev/sdd")
 		.with_pipewire("/run/user/1000", AudioDirection::Output)
 		.with_vfio_user_networking()
 		.with_looking_glass(1000, 1000)
@@ -23,12 +22,24 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 			.with_ram("8G")
 			.with_smp("sockets=1,cores=2,threads=2")
 			.with_cpu_affinity("0-1,8-9")
+			.with_virtio_disk("/dev/sdd")
 			.with_vga(Vga::Qxl),
 
 		Profile::Full => builder
+			.with_ram("16G")
+			.with_smp("sockets=1,cores=6,threads=2")
+			.with_cpu_affinity("0-5,8-13")
+			.with_virtio_disk("/dev/sdd")
+			.with_pci_device("0000:01:00.0")
+			.with_pci_device("0000:01:00.1")
+			.with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
+
+		Profile::Work => builder
 			.with_ram("24G")
 			.with_smp("sockets=1,cores=6,threads=2")
 			.with_cpu_affinity("0-5,8-13")
+			.with_virtio_disk("/dev/sdc")
+			.with_pipewire("/run/user/1000", AudioDirection::Duplex)
 			.with_pci_device("0000:01:00.0")
 			.with_pci_device("0000:01:00.1")
 			.with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
