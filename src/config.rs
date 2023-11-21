@@ -1,5 +1,5 @@
 use crate::cli::Profile;
-use crate::context::{ContextBuilder, Vga};
+use crate::context::{AudioDirection, ContextBuilder, Vga};
 
 pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 	// These options always apply
@@ -7,7 +7,7 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 		.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.with_ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
 		.with_virtio_disk("/dev/sdd")
-		.with_pipewire("/run/user/1000")
+		.with_pipewire("/run/user/1000", AudioDirection::Output)
 		.with_vfio_user_networking()
 		.with_looking_glass(1000, 1000)
 		.with_spice();

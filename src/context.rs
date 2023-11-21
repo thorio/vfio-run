@@ -51,7 +51,23 @@ enum Disk {
 #[derive(Debug)]
 enum Audio {
 	None,
-	Pipewire(PathBuf),
+	Pipewire(PathBuf, AudioDirection),
+}
+
+#[derive(Debug)]
+#[allow(unused)]
+pub enum AudioDirection {
+	Output,
+	Duplex,
+}
+
+impl AudioDirection {
+	pub fn device_name(&self) -> &'static str {
+		match self {
+			AudioDirection::Output => "hda-output",
+			AudioDirection::Duplex => "hda-duplex",
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -170,8 +186,8 @@ impl ContextBuilder {
 	}
 
 	/// Adds pipewire audio. The argument is the run dir, typically `/run/user/$UID`.
-	pub fn with_pipewire(mut self, runtime_dir: impl Into<PathBuf>) -> Self {
-		self.audio = Audio::Pipewire(runtime_dir.into());
+	pub fn with_pipewire(mut self, runtime_dir: impl Into<PathBuf>, direction: AudioDirection) -> Self {
+		self.audio = Audio::Pipewire(runtime_dir.into(), direction);
 		self
 	}
 
@@ -320,17 +336,18 @@ fn add_window(args: &mut ArgWriter, window: Window) {
 fn add_audio(args: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
 	match audio {
 		Audio::None => (),
-		Audio::Pipewire(runtime_dir) => {
+		Audio::Pipewire(runtime_dir, direction) => {
 			env.add("PIPEWIRE_RUNTIME_DIR", runtime_dir.to_string_lossy())
 				.add("PIPEWIRE_LATENCY", "512/48000");
 
+			let hda = format!("{},audiodev=pw,mixer=off", direction.device_name());
 			args.add_many(vec![
 				"-audiodev",
 				"pipewire,id=pw",
 				"-device",
 				"intel-hda",
 				"-device",
-				"hda-output,audiodev=pw,mixer=off",
+				&hda,
 			]);
 		}
 	}
