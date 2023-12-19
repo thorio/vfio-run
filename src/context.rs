@@ -396,7 +396,7 @@ fn add_usb(args: &mut ArgWriter, devices: Vec<UsbAddress>) {
 
 	for address in devices.iter() {
 		let fmt = format!(
-			"usb-host,vendorid={:x},productid={:x}",
+			"usb-host,vendorid=0x{:x},productid=0x{:x}",
 			address.vendor_id, address.product_id
 		);
 		args.add("-device").add(fmt);
