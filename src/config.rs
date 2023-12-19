@@ -30,8 +30,9 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 			.with_smp("sockets=1,cores=6,threads=2")
 			.with_cpu_affinity("0-5,8-13")
 			.with_virtio_disk("/dev/sdd")
-			.with_pci_device("0000:01:00.0")
-			.with_pci_device("0000:01:00.1")
+			.with_pci_device("0000:01:00.0") // GPU
+			.with_pci_device("0000:01:00.1") // GPU Audio
+			.with_pci_device("0000:05:00.0") // USB Controller
 			.with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
 
 		Profile::Work => builder
