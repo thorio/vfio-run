@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-struct UsbAddress {
-	vendor_id: u16,
-	product_id: u16,
+enum UsbDevice {
+	HostVidPid { vendor: u16, product: u16 },
+	Device(String),
 }
 
 #[derive(Debug)]
@@ -114,7 +114,7 @@ pub struct ContextBuilder {
 	disks: Vec<Disk>,
 	pci: Vec<String>,
 	unload_drivers: Option<Vec<String>>,
-	usb: Vec<UsbAddress>,
+	usb: Vec<UsbDevice>,
 	cpu_affinity: Option<String>,
 }
 
@@ -204,8 +204,8 @@ impl ContextBuilder {
 	}
 
 	/// Fully passes a USB device through to the VM. Useful for single-GPU passthrough.
-	pub fn with_usb_device(mut self, vendor_id: u16, product_id: u16) -> Self {
-		self.usb.push(UsbAddress { vendor_id, product_id });
+	pub fn with_usb_device(mut self, vendor: u16, product: u16) -> Self {
+		self.usb.push(UsbDevice::HostVidPid { vendor, product });
 		self
 	}
 
@@ -226,6 +226,11 @@ impl ContextBuilder {
 	/// Adds a virtual graphics device.
 	pub fn with_vga(mut self, vga: Vga) -> Self {
 		self.vga = vga;
+		self
+	}
+
+	pub fn with_usb_tablet(mut self) -> Self {
+		self.usb.push(UsbDevice::Device(String::from("usb-tablet")));
 		self
 	}
 
@@ -387,20 +392,25 @@ fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
 	}
 }
 
-fn add_usb(args: &mut ArgWriter, devices: Vec<UsbAddress>) {
+fn add_usb(args: &mut ArgWriter, devices: Vec<UsbDevice>) {
 	if devices.is_empty() {
 		return;
 	}
 
 	args.add("-usb");
 
-	for address in devices.iter() {
-		let fmt = format!(
-			"usb-host,vendorid=0x{:x},productid=0x{:x}",
-			address.vendor_id, address.product_id
-		);
-		args.add("-device").add(fmt);
+	for device in devices.into_iter() {
+		add_usb_device(args, device)
 	}
+}
+
+fn add_usb_device(args: &mut ArgWriter, device: UsbDevice) {
+	let device_config = match device {
+		UsbDevice::HostVidPid { vendor, product } => format!("usb-host,vendorid=0x{vendor:x},productid=0x{product:x}"),
+		UsbDevice::Device(device_config) => device_config,
+	};
+
+	args.add("-device").add(device_config);
 }
 
 fn add_looking_glass(args: &mut ArgWriter, tmp: &mut TmpFileWriter, config: LookingGlass) {

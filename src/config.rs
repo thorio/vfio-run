@@ -14,7 +14,7 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 
 	// This only applies when the --window flag is passed
 	if window {
-		builder = builder.with_window().with_vga(Vga::Qxl);
+		builder = builder.with_window().with_vga(Vga::Qxl).with_usb_tablet();
 	}
 
 	// These options only apply when the VM is started in the given profile
