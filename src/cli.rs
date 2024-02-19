@@ -52,4 +52,7 @@ pub enum Profile {
 
 	/// start with GPU passthrough
 	Full,
+
+	/// start with GPU passthrough and work OS
+	Work,
 }
