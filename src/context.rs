@@ -143,112 +143,112 @@ impl Default for ContextBuilder {
 #[allow(unused)]
 impl ContextBuilder {
 	/// CPU options for QEMU
-	pub fn with_cpu(mut self, options: impl Into<String>) -> Self {
+	pub fn cpu(mut self, options: impl Into<String>) -> Self {
 		self.cpu = Some(options.into());
 		self
 	}
 
 	/// Implements CPU pinning. See [taskset(1)](https://man7.org/linux/man-pages/man1/taskset.1.html)
-	pub fn with_cpu_affinity(mut self, affinity: impl Into<String>) -> Self {
+	pub fn cpu_affinity(mut self, affinity: impl Into<String>) -> Self {
 		self.cpu_affinity = Some(affinity.into());
 		self
 	}
 
 	/// Specify the number and topology of CPU cores.
-	pub fn with_smp(mut self, layout: impl Into<String>) -> Self {
+	pub fn smp(mut self, layout: impl Into<String>) -> Self {
 		self.smp = Some(layout.into());
 		self
 	}
 
 	/// Specifies the amount of RAM reserved for the VM.
-	pub fn with_ram(mut self, size: impl Into<String>) -> Self {
+	pub fn ram(mut self, size: impl Into<String>) -> Self {
 		self.ram = size.into();
 		self
 	}
 
 	/// Boot in UEFI mode. Argument is the path to OVMF.fd.
 	/// On Arch, install `edk2-ovmf`.
-	pub fn with_ovmf_bios(mut self, path: impl Into<PathBuf>) -> Self {
+	pub fn ovmf_bios(mut self, path: impl Into<PathBuf>) -> Self {
 		self.bios_type = BiosType::Ovmf(path.into());
 		self
 	}
 
 	/// Adds a physical disk. Compatible with Windows out-of-the box, but slow performance.
-	pub fn with_raw_disk(mut self, path: impl Into<PathBuf>) -> Self {
+	pub fn raw_disk(mut self, path: impl Into<PathBuf>) -> Self {
 		self.disks.push(Disk::Raw(path.into()));
 		self
 	}
 
 	/// Adds a physical disk with VirtIO. Faster, but requires driver installation on guest.
-	pub fn with_virtio_disk(mut self, path: impl Into<PathBuf>) -> Self {
+	pub fn virtio_disk(mut self, path: impl Into<PathBuf>) -> Self {
 		self.disks.push(Disk::Virtio(path.into()));
 		self
 	}
 
 	/// Adds pipewire audio. The argument is the run dir, typically `/run/user/$UID`.
-	pub fn with_pipewire(mut self, runtime_dir: impl Into<PathBuf>, direction: AudioDirection) -> Self {
+	pub fn pipewire(mut self, runtime_dir: impl Into<PathBuf>, direction: AudioDirection) -> Self {
 		self.audio = Audio::Pipewire(runtime_dir.into(), direction);
 		self
 	}
 
 	/// Adds basic Networking. Compatible with Windows out-of-the box, but high CPU overhead and wonky performance.
-	pub fn with_user_networking(mut self) -> Self {
+	pub fn user_networking(mut self) -> Self {
 		self.networking = Networking::User;
 		self
 	}
 
 	/// Adds VirtIO networking. Less overhead, more stable, but requires driver installation on guest.
-	pub fn with_vfio_user_networking(mut self) -> Self {
+	pub fn vfio_user_networking(mut self) -> Self {
 		self.networking = Networking::VirtioUser;
 		self
 	}
 
 	/// Fully passes a USB device through to the VM. Useful for single-GPU passthrough.
-	pub fn with_usb_device(mut self, vendor: u16, product: u16) -> Self {
+	pub fn usb_device(mut self, vendor: u16, product: u16) -> Self {
 		self.usb.push(UsbDevice::HostVidPid { vendor, product });
 		self
 	}
 
 	/// Unbinds and Rebinds the specified PCI devices before starting and after stopping the VM.
 	/// Then passes the devices through to the VM.
-	pub fn with_pci_device(mut self, address: impl Into<String>) -> Self {
+	pub fn pci_device(mut self, address: impl Into<String>) -> Self {
 		self.pci.push(address.into());
 		self
 	}
 
 	/// Unloads and Reloads the specified drivers before starting and after stopping the VM. e.g. nvidia drivers.
-	pub fn with_unloaded_drivers<T: Into<String>>(mut self, drivers: Vec<T>) -> Self {
+	pub fn unloaded_drivers<T: Into<String>>(mut self, drivers: Vec<T>) -> Self {
 		let drivers = drivers.into_iter().map(|d| d.into()).collect::<Vec<_>>();
 		self.unload_drivers = Some(drivers);
 		self
 	}
 
 	/// Adds a virtual graphics device.
-	pub fn with_vga(mut self, vga: Vga) -> Self {
+	pub fn vga(mut self, vga: Vga) -> Self {
 		self.vga = vga;
 		self
 	}
 
-	pub fn with_usb_tablet(mut self) -> Self {
+	pub fn usb_tablet(mut self) -> Self {
 		self.usb.push(UsbDevice::Device(String::from("usb-tablet")));
 		self
 	}
 
 	/// Adds a GTK window for debugging purposes. You don't want to use this for long, it's not very performant.
-	/// Pointless without a virtual VGA device, see [`with_vga`]
-	pub fn with_window(mut self) -> Self {
+	/// Pointless without a virtual VGA device, see [`vga`]
+	pub fn window(mut self) -> Self {
 		self.window = Window::Gtk;
 		self
 	}
 
 	/// Adds the [Looking Glass](https://looking-glass.io/) IVSHMEM device and sets the specified owner and group.
-	pub fn with_looking_glass(mut self, owner: impl Into<Uid>, group: impl Into<Gid>) -> Self {
+	pub fn looking_glass(mut self, owner: impl Into<Uid>, group: impl Into<Gid>) -> Self {
 		self.looking_glass = LookingGlass::Yes(owner.into(), group.into());
 		self
 	}
 
 	/// Adds Spice display, mouse and keyboard. Useful for Looking Glass as well.
-	pub fn with_spice(mut self) -> Self {
+	pub fn spice(mut self) -> Self {
 		self.spice = Spice::Yes;
 		self
 	}

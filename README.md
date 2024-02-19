@@ -30,22 +30,22 @@ This is a very concice guide and probably missing some stuff. If something doesn
 - Configure a minimal config to get going:
   ```rust
   let builder = ContextBuilder::default()
-  	.with_smp("sockets=1,cores=4,threads=2")
-  	.with_ram("8G")
-  	.with_raw_disk("/dev/sdd") // the block device you installed Windows on
-  	.with_user_networking()
-  	.with_window()
-  	.with_vga(Vga::Standard);
+  	.smp("sockets=1,cores=4,threads=2")
+  	.ram("8G")
+  	.raw_disk("/dev/sdd") // the block device you installed Windows on
+  	.user_networking()
+  	.window()
+  	.vga(Vga::Standard);
   ```
 
 - Install [Spice guest utils][spice-guest-utils] and [VirtIO drivers][virtio-win] on the guest
 
 - Add OVMF bios, VirtIO networking, VirtIO disk, audio, then check if it works
   ```rust
-  .with_ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
-  .with_vfio_user_networking()
-  .with_virtio_disk("/dev/sdd")
-  .with_pipewire("/run/user/1000") // your UID
+  .ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
+  .vfio_user_networking()
+  .virtio_disk("/dev/sdd")
+  .pipewire("/run/user/1000") // your UID
   ```
 
   > Windows will likely refuse to boot from VirtIO at first, this requires [some fiddling][virtio-dummy-disk].  
@@ -55,9 +55,9 @@ This is a very concice guide and probably missing some stuff. If something doesn
 
 - Add your GPU and, optionally, the drivers that need to be unloaded. NVIDIA Example:
   ```rust
-  .with_pci_device("0000:01:00.0") // PCI address(es) determined in the first step
-  .with_pci_device("0000:01:00.1")
-  .with_unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"])
+  .pci_device("0000:01:00.0") // PCI address(es) determined in the first step
+  .pci_device("0000:01:00.1")
+  .unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"])
   ```
 
   > Important: If you try to run this from your graphical session, it will probably fail due to your GPU being in use.  
@@ -67,16 +67,16 @@ This is a very concice guide and probably missing some stuff. If something doesn
 
 - If you're doing Single-GPU passthrough, you also want to add your keyboard and mouse:
   ```rust
-  .with_usb_device(0x046d, 0xc08b) // get these IDs from lsusb
-  .with_usb_device(0x75fa, 0x0088)
+  .usb_device(0x046d, 0xc08b) // get these IDs from lsusb
+  .usb_device(0x75fa, 0x0088)
   ```
 
 - Boot the VM. You should see Windows start on the monitor(s) attached to the GPU you passed.
 
 - If you have a second GPU, add looking glass and spice, then try connecting with the looking glass client.
   ```rust
-  .with_looking_glass(1000, 1000) // your UID and GID
-  .with_spice()
+  .looking_glass(1000, 1000) // your UID and GID
+  .spice()
   ```
 
 [single-gpu-passthrough]: https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
@@ -90,10 +90,10 @@ This is a very concice guide and probably missing some stuff. If something doesn
 
 For best performance, you should use these cpu options:
 ```rust
-.with_cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
+.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 ```
 
-Also look at CPU pinning, eg. `.with_cpu_affinity("0-5,8-13")` for 6 cores with corresponding hyperthreading pairs on Ryzen 5800X and 7800X3D.  
+Also look at CPU pinning, eg. `.cpu_affinity("0-5,8-13")` for 6 cores with corresponding hyperthreading pairs on Ryzen 5800X and 7800X3D.  
 This will vary based on your CPU and alotted cores, see [taskset(1)][taskset] and [lstopo(1)][lstopo]
 
 [taskset]: https://man7.org/linux/man-pages/man1/taskset.1.html
