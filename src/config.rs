@@ -25,6 +25,7 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 			.smp("sockets=1,cores=2,threads=2")
 			.cpu_affinity("0-1,8-9")
 			.virtio_disk("/dev/sdd")
+			.pci_device("0000:05:00.0") // USB Controller
 			.vga(Vga::Qxl),
 
 		Profile::Full => builder
