@@ -2,6 +2,9 @@
 
 For more digestible, beginner friendly methods see BlandManStudios on YouTube: [Single GPU][single-gpu], [Dual GPU][multi-gpu]
 
+[single-gpu]: https://www.youtube.com/watch?v=eTWf5D092VY
+[multi-gpu]: https://www.youtube.com/watch?v=m8xj2Py8KPc
+
 # vfio-run
 
 This is a helper for running a qemu VM with VFIO GPU-passthrough in multiple configurations.  
@@ -11,10 +14,33 @@ You can also pick and choose configs, devices and features in multiple profiles.
 This isn't a complete project, it's more of a template for your own Helper.
 
 Configuration is done in code, with the gory details abstracted away.  
-See `src/config.rs`.
+See `src/config.rs`, then just `cargo build` when you're done. If you don't have rust set up on your machine, you can use the included devcontainer.  
+Rust statically links most dependencies, so you can then run the resulting binary on your host system.
 
-[single-gpu]: https://www.youtube.com/watch?v=eTWf5D092VY
-[multi-gpu]: https://www.youtube.com/watch?v=eTWf5D092VY
+# Known issues
+
+### QEMU complains "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
+dmesg has lines like this:
+```
+[Sun Mar 19 13:57:12 2023] x86/PAT: CPU 0/KVM:1329 conflicting memory types f800000000-fc00000000 write-combining<->uncached-minus
+```
+From what I've read, this seems to be a very specific issue with the nvidia drivers **while the amdgpu drivers are also loaded**. There's a [GitLab issue about it here][gitlab-ticket].
+
+On my system, this happens when the nvidia drivers have already configured the GPUs iomem to use the `write-combining` cache strategy, when vfio wants `uncached-minus` (see [kernel documentation on PAT][pat]). Unloading the nvidia drivers *does not* remove these PAT entries, and vfio then complains that it doesn't match the cache strategy it was expecting.
+
+#### Solutions
+
+I'm currently dealing with this by blacklisting the nvidia kernel modules in modprobe's config, then running `vfio-run detach full` or `vfio-run attach full` to choose between:
+- working GPU in the VM, but bad GPU performance on the host (depending on workload)
+- normal GPU performance on the host, but nonfunctional GPU passthrough
+
+Rebooting clears the PAT, so you can choose again.
+
+There are some other workarounds [here][workarounds-link].
+
+[gitlab-ticket]: https://gitlab.freedesktop.org/drm/amd/-/issues/2794
+[pat]: https://www.kernel.org/doc/Documentation/x86/pat.txt
+[workarounds-link]: https://github.com/Kinsteen/win10-gpu-passthrough#compute-mode---vfio-fix
 
 # Setup
 This is a very concice guide and probably missing some stuff. If something doesn't work or you get stuck, here's some supplementary reading: [Complete Single GPU Passthrough][single-gpu-passthrough], [Looking Glass Documentation][looking-glass].
@@ -37,6 +63,8 @@ This is a very concice guide and probably missing some stuff. If something doesn
   	.window()
   	.vga(Vga::Standard);
   ```
+
+- Start the VM with `vfio-run run full`
 
 - Install [Spice guest utils][spice-guest-utils] and [VirtIO drivers][virtio-win] on the guest
 
@@ -72,6 +100,7 @@ This is a very concice guide and probably missing some stuff. If something doesn
   ```
 
 - Boot the VM. You should see Windows start on the monitor(s) attached to the GPU you passed.
+  > You will likely have to drop to a TTY and stop your display server to successfully detach the GPU. How this is done may differ depending on your distro and setup, please check the relevant documentation.
 
 - If you have a second GPU, add looking glass and spice, then try connecting with the looking glass client.
   ```rust

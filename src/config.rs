@@ -1,6 +1,8 @@
 use crate::cli::Profile;
 use crate::context::{AudioDirection, ContextBuilder, Vga};
 
+// Look at the readme for setup instructions. The builder functions also have doc comments.
+
 pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 	// These options always apply
 	let mut builder = ContextBuilder::default()
