@@ -1,7 +1,9 @@
+use crate::smbios::{SmBiosMap, SmBiosMapExt, SmBiosType};
 use crate::util::{ArgWriter, EnvWriter, TmpFileWriter};
 use nix::sys::stat::Mode;
 use nix::unistd::{Gid, Uid};
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -105,6 +107,7 @@ pub struct ContextBuilder {
 	smp: Option<String>,
 	ram: String,
 	bios_type: BiosType,
+	smbios: SmBiosMap,
 	vga: Vga,
 	window: Window,
 	audio: Audio,
@@ -125,6 +128,7 @@ impl Default for ContextBuilder {
 			smp: None,
 			ram: String::from("4G"),
 			bios_type: BiosType::Default,
+			smbios: SmBiosMap::default(),
 			vga: Vga::None,
 			window: Window::None,
 			audio: Audio::None,
@@ -140,7 +144,8 @@ impl Default for ContextBuilder {
 	}
 }
 
-#[allow(unused)]
+// Not all configs use all methods
+#[allow(dead_code)]
 impl ContextBuilder {
 	/// CPU options for QEMU
 	pub fn cpu(mut self, options: impl Into<String>) -> Self {
@@ -170,6 +175,19 @@ impl ContextBuilder {
 	/// On Arch, install `edk2-ovmf`.
 	pub fn ovmf_bios(mut self, path: impl Into<PathBuf>) -> Self {
 		self.bios_type = BiosType::Ovmf(path.into());
+		self
+	}
+
+	/// Fills in SMBIOS fields from real hardware, falling back to defaults when unavailable.
+	/// This may allow you to fool some Anticheats into thinking you're running on bare metal.
+	pub fn smbios_auto(mut self) -> Self {
+		crate::smbios::populate_auto(&mut self.smbios);
+		self
+	}
+
+	/// Allows you to manually fill in SMBIOS fields. Repeated keys replace previous values.
+	pub fn smbios(mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>) -> Self {
+		self.smbios.add_fields(smbios_type, pairs);
 		self
 	}
 
@@ -262,6 +280,7 @@ impl ContextBuilder {
 		add_monitor(&mut arg_writer);
 		add_system(&mut arg_writer, self.cpu, self.smp, self.ram);
 		add_bios(&mut arg_writer, self.bios_type);
+		add_smbios(&mut arg_writer, self.smbios);
 		add_vga(&mut arg_writer, self.vga);
 		add_window(&mut arg_writer, self.window);
 		add_audio(&mut arg_writer, &mut env_writer, self.audio);
@@ -319,6 +338,18 @@ fn add_bios(args: &mut ArgWriter, bios: BiosType) {
 				.add("-bios")
 				.add(path.to_string_lossy());
 		}
+	}
+}
+
+fn add_smbios(args: &mut ArgWriter, smbios: SmBiosMap) {
+	for (smbios_type, fields) in smbios {
+		let mut buffer = format!("type={}", smbios_type as isize);
+
+		for (key, value) in fields {
+			write!(&mut buffer, ",{}={}", key, value.replace(',', ",,")).unwrap();
+		}
+
+		args.add("-smbios").add(buffer);
 	}
 }
 

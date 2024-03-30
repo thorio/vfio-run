@@ -8,6 +8,7 @@ mod config;
 mod context;
 mod modprobe;
 mod runner;
+mod smbios;
 mod util;
 mod virsh;
 

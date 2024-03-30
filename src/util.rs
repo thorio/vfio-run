@@ -37,8 +37,7 @@ impl EnvWriter {
 	pub fn add(&mut self, key: impl Into<String>, value: impl Into<String>) -> &'_ mut Self {
 		let key = key.into();
 		if self.env.contains_key(&key) {
-			// TODO error handling; use entry API?
-			panic!("env conflict");
+			panic!("env conflict: {}", key);
 		}
 
 		self.env.insert(key, value.into());

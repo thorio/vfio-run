@@ -8,6 +8,7 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 	let mut builder = ContextBuilder::default()
 		.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
+		.smbios_auto()
 		.virtio_disk("/dev/sdd")
 		.pipewire("/run/user/1000", AudioDirection::Output)
 		.vfio_user_networking()
