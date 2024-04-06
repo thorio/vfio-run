@@ -1,4 +1,4 @@
-use crate::context::TmpFile;
+use super::TmpFile;
 use nix::sys::stat::Mode;
 use nix::unistd::{Gid, Uid};
 use std::{collections::HashMap, path::PathBuf};

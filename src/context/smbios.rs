@@ -1,36 +1,6 @@
+use super::{SmBiosMap, SmBiosMapExt, SmBiosType};
 use smbioslib::*;
-use std::{any::type_name, collections::HashMap};
-
-pub type SmBiosMap = HashMap<SmBiosType, HashMap<String, String>>;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum SmBiosType {
-	BiosInformation = 0,
-	SystemInformation = 1,
-	BaseboardInformation = 2,
-	EnclosureInformation = 3,
-	ProcessorInformation = 4,
-	OemStrings = 11,
-	MemoryDevice = 17,
-}
-
-pub trait SmBiosMapExt {
-	fn add_field(&mut self, smbios_type: SmBiosType, key: impl Into<String>, value: impl Into<String>) {
-		self.add_fields(smbios_type, vec![(key, value)])
-	}
-
-	fn add_fields(&mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>);
-}
-
-impl SmBiosMapExt for SmBiosMap {
-	fn add_fields(&mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>) {
-		let values = self.entry(smbios_type).or_default();
-
-		for (key, value) in pairs {
-			values.insert(key.into(), value.into());
-		}
-	}
-}
+use std::any::type_name;
 
 /// Fills in SMBIOS fields from real hardware, falling back to defaults when unavailable.
 /// Default values taken from https://docs.vrchat.com/docs/using-vrchat-in-a-virtual-machine#qemu

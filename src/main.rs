@@ -1,25 +1,19 @@
 use cli::{Command, Profile};
 use context::Context;
-use log::*;
 use nix::unistd::Uid;
 
 mod cli;
 mod config;
 mod context;
-mod modprobe;
-mod pat_dealloc;
 mod runner;
-mod smbios;
-mod util;
-mod virsh;
 
 fn main() {
 	let cli = cli::parse();
 	init_logger(cli.debug);
-	debug!("{:?}", cli);
+	log::debug!("{:?}", cli);
 
 	if !Uid::effective().is_root() {
-		warn!("running as non-root, here be dragons");
+		log::warn!("running as non-root, here be dragons");
 	}
 
 	match cli.command {
@@ -49,16 +43,16 @@ fn run(window: bool, profile: Profile, skip_attach: bool) {
 	let context = get_context(window, &profile);
 
 	if runner::run(context, skip_attach).is_ok() {
-		info!("exit successful")
+		log::info!("exit successful")
 	}
 }
 
 fn get_context(window: bool, profile: &Profile) -> Context {
 	let builder = config::get_builder(window, profile);
-	debug!("{:?}", builder);
+	log::debug!("{:?}", builder);
 
 	let context = builder.build();
-	debug!("{:?}", context);
+	log::debug!("{:?}", context);
 
 	context
 }

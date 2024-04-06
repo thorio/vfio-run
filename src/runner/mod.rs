@@ -1,10 +1,13 @@
 use crate::context::{Context, TmpFile};
-use crate::{modprobe, pat_dealloc, virsh};
 use anyhow::Result;
-use log::*;
 use std::fs::{self, File};
 use std::os::fd::AsRawFd;
 use std::process::Command;
+
+mod modprobe;
+mod pat_dealloc;
+mod util;
+mod virsh;
 
 const QEMU_CMD: &str = "qemu-system-x86_64";
 
@@ -14,7 +17,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	create_tmp_files(&context.tmp_files)?;
 	detach_devices(&context)?;
 
-	info!("starting qemu");
+	log::info!("starting qemu");
 
 	let result = get_command(&context)
 		.args(&context.args)
@@ -23,7 +26,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 		.and_then(|mut handle| handle.wait());
 
 	if let Err(e) = result {
-		error!("error running qemu: {}", e);
+		log::error!("error running qemu: {}", e);
 	}
 
 	if !skip_attach {
@@ -39,14 +42,14 @@ fn ignore_sigint() {
 	// We ignore SIGINT, instead passing it to the wrapped QEMU process
 	// and then cleaning up after it exits
 	if let Err(err) = ctrlc::set_handler(|| ()) {
-		warn!("error setting SIGINT handler: {err}")
+		log::warn!("error setting SIGINT handler: {err}")
 	}
 }
 
 fn create_tmp_files(files: &[TmpFile]) -> Result<(), ()> {
 	for file in files {
 		if let Err(err) = create_tmp_file(file) {
-			error!("error creating file {file:?} {err}");
+			log::error!("error creating file {file:?} {err}");
 			return Err(());
 		}
 	}
@@ -71,14 +74,14 @@ pub fn reattach_devices(context: &Context) -> Result<(), ()> {
 
 pub fn detach_devices(context: &Context) -> Result<(), ()> {
 	if unload_drivers(context.unload_drivers.as_ref()).is_err() {
-		info!("attempting to reload drivers");
+		log::info!("attempting to reload drivers");
 		reload_drivers(context.unload_drivers.as_ref()).ok();
 		return Err(());
 	}
 
 	if let Err(unbound) = unbind_pci(&context.pci) {
 		if !unbound.is_empty() {
-			info!("attempting to rebind pci devices");
+			log::info!("attempting to rebind pci devices");
 			rebind_pci(&unbound).ok();
 			reload_drivers(context.unload_drivers.as_ref()).ok();
 		}
@@ -96,21 +99,21 @@ pub fn pat_dealloc(addresses: &[String]) {
 		return;
 	}
 
-	info!("clearing PAT entries");
+	log::info!("clearing PAT entries");
 
 	for address in addresses {
 		if let Err(e) = pat_dealloc::clear_pat(address) {
-			error!("erroring clearing PAT for {address}: {e}");
+			log::error!("erroring clearing PAT for {address}: {e}");
 		}
 	}
 }
 
 fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	if let Some(drivers) = drivers {
-		info!("unloading drivers");
-		debug!("unloading {drivers:?}");
+		log::info!("unloading drivers");
+		log::debug!("unloading {drivers:?}");
 		if let Err(msg) = modprobe::unload(drivers) {
-			error!("unloading {}", msg);
+			log::error!("unloading {}", msg);
 			return Err(());
 		}
 	}
@@ -120,10 +123,10 @@ fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 
 fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	if let Some(drivers) = drivers {
-		info!("loading drivers");
-		debug!("loading {drivers:?}");
+		log::info!("loading drivers");
+		log::debug!("loading {drivers:?}");
 		if let Err(msg) = modprobe::load(drivers) {
-			error!("loading {}", msg);
+			log::error!("loading {}", msg);
 			return Err(());
 		}
 	}
@@ -138,14 +141,14 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
 		return Ok(());
 	}
 
-	info!("unbinding pci devices");
+	log::info!("unbinding pci devices");
 
 	for addr in addressses.iter().map(|a| a.as_ref()) {
-		debug!("unbinding {addr}");
+		log::debug!("unbinding {addr}");
 		let result = virsh::unbind_pci(addr);
 
 		if result.is_err() {
-			error!("pci unbind {}", result.unwrap_err());
+			log::error!("pci unbind {}", result.unwrap_err());
 			return Err(unbound);
 		}
 
@@ -160,17 +163,17 @@ fn rebind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 		return Ok(());
 	}
 
-	info!("rebinding pci devices");
+	log::info!("rebinding pci devices");
 
 	let mut had_error = false;
 
 	for addr in addressses.iter().map(|a| a.as_ref()) {
-		debug!("rebinding {addr}");
+		log::debug!("rebinding {addr}");
 		let result = virsh::rebind_pci(addr);
 
 		// do not cancel rebind over one error, attempt rebinding the rest as well!
 		if result.is_err() {
-			error!("pci rebind {}", result.unwrap_err());
+			log::error!("pci rebind {}", result.unwrap_err());
 			had_error = true;
 		}
 	}
