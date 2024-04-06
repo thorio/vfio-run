@@ -17,37 +17,6 @@ Configuration is done in code, with the gory details abstracted away.
 See `src/config.rs`, then just `cargo build` when you're done. If you don't have rust set up on your machine, you can use the included devcontainer.  
 Rust statically links most dependencies, so you can then run the resulting binary on your host system.
 
-# Known issues
-
-### QEMU complains "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
-dmesg has lines like this:
-```
-[Sun Mar 19 13:57:12 2023] x86/PAT: CPU 0/KVM:1329 conflicting memory types f800000000-fc00000000 write-combining<->uncached-minus
-```
-From what I've read, this seems to be a very specific issue with the nvidia drivers **while the amdgpu drivers are also loaded**. There's a [GitLab issue about it here][gitlab-ticket].
-
-On my system, this happens when the nvidia drivers have already configured the GPUs iomem to use the `write-combining` cache strategy, when vfio wants `uncached-minus` (see [kernel documentation on PAT][pat]). Unloading the nvidia drivers *does not* remove these PAT entries, and vfio then complains that it doesn't match the cache strategy it was expecting.
-
-#### PAT-dealloc
-
-There is now an automated workaround that works without patching the kernel, see [pat-dealloc](https://github.com/thorio/pat-dealloc). When you have it installed, add `.pat_dealloc("0000:01:00.0")` to your config, substituting the PCI address of your GPU.
-
-This will automatically clear PAT entries for the GPU when attaching or detaching, thus giving each driver a clean slate to work with.
-
-#### Other Solutions
-
-You can blacklist the nvidia kernel modules in modprobe's config, then run `vfio-run detach full` or `vfio-run attach full` after booting to choose between:
-- working GPU in the VM, but bad GPU performance on the host (depending on workload)
-- normal GPU performance on the host, but nonfunctional GPU passthrough
-
-Rebooting clears the PAT, so you can choose again.
-
-There are some other workarounds [here][workarounds-link].
-
-[gitlab-ticket]: https://gitlab.freedesktop.org/drm/amd/-/issues/2794
-[pat]: https://www.kernel.org/doc/Documentation/x86/pat.txt
-[workarounds-link]: https://github.com/Kinsteen/win10-gpu-passthrough#compute-mode---vfio-fix
-
 # Setup
 This is a very concice guide and probably missing some stuff. If something doesn't work or you get stuck, here's some supplementary reading: [Complete Single GPU Passthrough][single-gpu-passthrough], [Looking Glass Documentation][looking-glass].
 
@@ -120,6 +89,37 @@ This is a very concice guide and probably missing some stuff. If something doesn
 [spice-guest-utils]: https://www.spice-space.org/download/windows/spice-guest-tools/spice-guest-tools-latest.exe
 [virtio-win]: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 [virtio-dummy-disk]: https://forum.proxmox.com/threads/vm-wont-start-after-disk-set-to-virtio.94646/
+
+# Known issues
+
+### QEMU complains "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
+dmesg has lines like this:
+```
+[Sun Mar 19 13:57:12 2023] x86/PAT: CPU 0/KVM:1329 conflicting memory types f800000000-fc00000000 write-combining<->uncached-minus
+```
+From what I've read, this seems to be a very specific issue with the nvidia drivers **while the amdgpu drivers are also loaded**. There's a [GitLab issue about it here][gitlab-ticket].
+
+On my system, this happens when the nvidia drivers have already configured the GPUs iomem to use the `write-combining` cache strategy, when vfio wants `uncached-minus` (see [kernel documentation on PAT][pat]). Unloading the nvidia drivers *does not* remove these PAT entries, and vfio then complains that it doesn't match the cache strategy it was expecting.
+
+#### PAT-dealloc
+
+There is now an automated workaround that works without patching the kernel, see [pat-dealloc](https://github.com/thorio/pat-dealloc). When you have it installed, add `.pat_dealloc("0000:01:00.0")` to your config, substituting the PCI address of your GPU.
+
+This will automatically clear PAT entries for the GPU when attaching or detaching, thus giving each driver a clean slate to work with.
+
+#### Other Solutions
+
+You can blacklist the nvidia kernel modules in modprobe's config, then run `vfio-run detach full` or `vfio-run attach full` after booting to choose between:
+- working GPU in the VM, but bad GPU performance on the host (depending on workload)
+- normal GPU performance on the host, but nonfunctional GPU passthrough
+
+Rebooting clears the PAT, so you can choose again.
+
+There are some other workarounds [here][workarounds-link].
+
+[gitlab-ticket]: https://gitlab.freedesktop.org/drm/amd/-/issues/2794
+[pat]: https://www.kernel.org/doc/Documentation/x86/pat.txt
+[workarounds-link]: https://github.com/Kinsteen/win10-gpu-passthrough#compute-mode---vfio-fix
 
 ## Performance tuning
 
