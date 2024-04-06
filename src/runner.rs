@@ -1,5 +1,5 @@
 use crate::context::{Context, TmpFile};
-use crate::{modprobe, virsh};
+use crate::{modprobe, pat_dealloc, virsh};
 use anyhow::Result;
 use log::*;
 use std::fs::{self, File};
@@ -64,6 +64,7 @@ fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
 }
 
 pub fn reattach_devices(context: &Context) -> Result<(), ()> {
+	pat_dealloc(&context.pat_dealloc);
 	rebind_pci(&context.pci)?;
 	reload_drivers(context.unload_drivers.as_ref())
 }
@@ -85,7 +86,23 @@ pub fn detach_devices(context: &Context) -> Result<(), ()> {
 		return Err(());
 	}
 
+	pat_dealloc(&context.pat_dealloc);
+
 	Ok(())
+}
+
+pub fn pat_dealloc(addresses: &[String]) {
+	if addresses.is_empty() {
+		return;
+	}
+
+	info!("clearing PAT entries");
+
+	for address in addresses {
+		if let Err(e) = pat_dealloc::clear_pat(address) {
+			error!("erroring clearing PAT for {address}: {e}");
+		}
+	}
 }
 
 fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {

@@ -7,6 +7,7 @@ mod cli;
 mod config;
 mod context;
 mod modprobe;
+mod pat_dealloc;
 mod runner;
 mod smbios;
 mod util;

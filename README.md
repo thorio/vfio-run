@@ -28,9 +28,15 @@ From what I've read, this seems to be a very specific issue with the nvidia driv
 
 On my system, this happens when the nvidia drivers have already configured the GPUs iomem to use the `write-combining` cache strategy, when vfio wants `uncached-minus` (see [kernel documentation on PAT][pat]). Unloading the nvidia drivers *does not* remove these PAT entries, and vfio then complains that it doesn't match the cache strategy it was expecting.
 
-#### Solutions
+#### PAT-dealloc
 
-I'm currently dealing with this by blacklisting the nvidia kernel modules in modprobe's config, then running `vfio-run detach full` or `vfio-run attach full` to choose between:
+There is now an automated workaround that works without patching the kernel, see [pat-dealloc](https://github.com/thorio/pat-dealloc). When you have it installed, add `.pat_dealloc("0000:01:00.0")` to your config, substituting the PCI address of your GPU.
+
+This will automatically clear PAT entries for the GPU when attaching or detaching, thus giving each driver a clean slate to work with.
+
+#### Other Solutions
+
+You can blacklist the nvidia kernel modules in modprobe's config, then run `vfio-run detach full` or `vfio-run attach full` after booting to choose between:
 - working GPU in the VM, but bad GPU performance on the host (depending on workload)
 - normal GPU performance on the host, but nonfunctional GPU passthrough
 

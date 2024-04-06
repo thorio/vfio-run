@@ -96,6 +96,7 @@ pub struct Context {
 	pub env: HashMap<String, String>,
 	pub args: Vec<String>,
 	pub pci: Vec<String>,
+	pub pat_dealloc: Vec<String>,
 	pub tmp_files: Vec<TmpFile>,
 	pub cpu_affinity: Option<String>,
 	pub unload_drivers: Option<Vec<String>>,
@@ -116,6 +117,7 @@ pub struct ContextBuilder {
 	spice: Spice,
 	disks: Vec<Disk>,
 	pci: Vec<String>,
+	pat_dealloc: Vec<String>,
 	unload_drivers: Option<Vec<String>>,
 	usb: Vec<UsbDevice>,
 	cpu_affinity: Option<String>,
@@ -135,9 +137,10 @@ impl Default for ContextBuilder {
 			networking: Networking::None,
 			looking_glass: LookingGlass::No,
 			spice: Spice::No,
-			disks: vec![],
-			pci: vec![],
-			usb: vec![],
+			disks: Vec::default(),
+			pci: Vec::default(),
+			pat_dealloc: Vec::default(),
+			usb: Vec::default(),
 			unload_drivers: None,
 			cpu_affinity: None,
 		}
@@ -234,6 +237,15 @@ impl ContextBuilder {
 		self
 	}
 
+	/// Clears the PAT entries of the specified PCI devices' memory regions
+	/// after unbinding and before rebinding to work around the "Failed to mmap ... BAR" issue.
+	///
+	/// Requires [pat-dealloc](https://github.com/thorio/pat-dealloc) to be installed.
+	pub fn pat_dealloc(mut self, address: impl Into<String>) -> Self {
+		self.pat_dealloc.push(address.into());
+		self
+	}
+
 	/// Unloads and Reloads the specified drivers before starting and after stopping the VM. e.g. nvidia drivers.
 	pub fn unloaded_drivers<T: Into<String>>(mut self, drivers: Vec<T>) -> Self {
 		let drivers = drivers.into_iter().map(|d| d.into()).collect::<Vec<_>>();
@@ -295,6 +307,7 @@ impl ContextBuilder {
 			env: env_writer.get_envs(),
 			args: arg_writer.get_args(),
 			pci: self.pci,
+			pat_dealloc: self.pat_dealloc,
 			cpu_affinity: self.cpu_affinity,
 			unload_drivers: self.unload_drivers,
 			tmp_files: tmp_file_writer.get_tmp_files(),
