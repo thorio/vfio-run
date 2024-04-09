@@ -1,5 +1,5 @@
 use crate::cli::Profile;
-use crate::context::{AudioDirection, ContextBuilder, Vga};
+use crate::context::{ContextBuilder, IntelHdaType, Vga};
 
 // Look at the readme for setup instructions. The builder functions also have doc comments.
 
@@ -10,10 +10,11 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 		.ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
 		.smbios_auto()
 		.virtio_disk("/dev/sdd")
-		.pipewire("/run/user/1000", AudioDirection::Output)
+		.pipewire("/run/user/1000")
+		.intel_hda(IntelHdaType::Output)
 		.vfio_user_networking()
 		.looking_glass(1000, 1000)
-		.spice();
+		.spice_kvm();
 
 	// This only applies when the --window flag is passed
 	if window {

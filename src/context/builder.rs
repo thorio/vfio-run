@@ -13,7 +13,8 @@ pub struct ContextBuilder {
 	smbios: SmBiosMap,
 	vga: Vga,
 	window: Window,
-	audio: Audio,
+	audio_backend: AudioBackend,
+	audio_frontend: AudioFrontend,
 	networking: Networking,
 	looking_glass: LookingGlass,
 	spice: Spice,
@@ -35,7 +36,8 @@ impl Default for ContextBuilder {
 			smbios: SmBiosMap::default(),
 			vga: Vga::None,
 			window: Window::None,
-			audio: Audio::None,
+			audio_backend: AudioBackend::None,
+			audio_frontend: AudioFrontend::None,
 			networking: Networking::None,
 			looking_glass: LookingGlass::No,
 			spice: Spice::No,
@@ -76,14 +78,14 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Boot in UEFI mode. Argument is the path to OVMF.fd.
+	/// Boot in UEFI mode. Argument is the path to OVMF.fd.  
 	/// On Arch, install `edk2-ovmf`.
 	pub fn ovmf_bios(mut self, path: impl Into<PathBuf>) -> Self {
 		self.bios_type = BiosType::Ovmf(path.into());
 		self
 	}
 
-	/// Fills in SMBIOS fields from real hardware, falling back to defaults when unavailable.
+	/// Fills in SMBIOS fields from real hardware, falling back to defaults when unavailable.  
 	/// This may allow you to fool some Anticheats into thinking you're running on bare metal.
 	pub fn smbios_auto(mut self) -> Self {
 		smbios::populate_auto(&mut self.smbios);
@@ -108,9 +110,38 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Adds pipewire audio. The argument is the run dir, typically `/run/user/$UID`.
-	pub fn pipewire(mut self, runtime_dir: impl Into<PathBuf>, direction: AudioDirection) -> Self {
-		self.audio = Audio::Pipewire(runtime_dir.into(), direction);
+	/// Adds pipewire audio backend. The argument is the run dir, typically `/run/user/$UID`.  
+	/// Incomplete on its own, requires audio frontend to be configured.
+	pub fn pipewire(mut self, runtime_dir: impl Into<PathBuf>) -> Self {
+		self.audio_backend = AudioBackend::Pipewire(runtime_dir.into());
+		self
+	}
+
+	/// Adds spice audio backend.  
+	/// Incomplete on its own, requires audio frontend to be configured.
+	pub fn spice_audio(mut self) -> Self {
+		self.audio_backend = AudioBackend::Spice;
+		self
+	}
+
+	/// Adds and emulated intel ich6 soundcard.  
+	/// Requires an audio backend to be configured.
+	pub fn intel_hda(mut self, hda_type: IntelHdaType) -> Self {
+		self.audio_frontend = AudioFrontend::IntelHda(hda_type);
+		self
+	}
+
+	/// Adds and emulated intel ich9 soundcard.  
+	/// Requires an audio backend to be configured.
+	pub fn intel_hda_ich9(mut self, hda_type: IntelHdaType) -> Self {
+		self.audio_frontend = AudioFrontend::IntelHdaIch9(hda_type);
+		self
+	}
+
+	/// Adds and emulated usb audio device.  
+	/// Requires an audio backend to be configured.
+	pub fn usb_audio(mut self) -> Self {
+		self.audio_frontend = AudioFrontend::UsbAudio;
 		self
 	}
 
@@ -132,7 +163,7 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Unbinds and Rebinds the specified PCI devices before starting and after stopping the VM.
+	/// Unbinds and Rebinds the specified PCI devices before starting and after stopping the VM.  
 	/// Then passes the devices through to the VM.
 	pub fn pci_device(mut self, address: impl Into<String>) -> Self {
 		self.pci.push(address.into());
@@ -166,7 +197,7 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Adds a GTK window for debugging purposes. You don't want to use this for long, it's not very performant.
+	/// Adds a GTK window for debugging purposes. You don't want to use this for long, it's not very performant.  
 	/// Pointless without a virtual VGA device, see [`vga`]
 	pub fn window(mut self) -> Self {
 		self.window = Window::Gtk;
@@ -180,7 +211,7 @@ impl ContextBuilder {
 	}
 
 	/// Adds Spice display, mouse and keyboard. Useful for Looking Glass as well.
-	pub fn spice(mut self) -> Self {
+	pub fn spice_kvm(mut self) -> Self {
 		self.spice = Spice::Yes;
 		self
 	}
@@ -197,7 +228,8 @@ impl ContextBuilder {
 		build::add_smbios(&mut arg_writer, self.smbios);
 		build::add_vga(&mut arg_writer, self.vga);
 		build::add_window(&mut arg_writer, self.window);
-		build::add_audio(&mut arg_writer, &mut env_writer, self.audio);
+		build::add_audio_backend(&mut arg_writer, &mut env_writer, self.audio_backend);
+		build::add_audio_frontend(&mut arg_writer, self.audio_frontend);
 		build::add_networking(&mut arg_writer, self.networking);
 		build::add_pci(&mut arg_writer, &self.pci);
 		build::add_disks(&mut arg_writer, self.disks);

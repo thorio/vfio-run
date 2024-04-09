@@ -54,23 +54,34 @@ pub enum Disk {
 }
 
 #[derive(Debug)]
-pub enum Audio {
+pub enum AudioBackend {
 	None,
-	Pipewire(PathBuf, AudioDirection),
+	Pipewire(PathBuf),
+	Spice,
+}
+
+#[derive(Debug)]
+pub enum AudioFrontend {
+	None,
+	IntelHda(IntelHdaType),
+	IntelHdaIch9(IntelHdaType),
+	UsbAudio,
 }
 
 #[derive(Debug)]
 #[allow(unused)]
-pub enum AudioDirection {
+pub enum IntelHdaType {
 	Output,
 	Duplex,
+	Micro,
 }
 
-impl AudioDirection {
+impl IntelHdaType {
 	pub fn device_name(&self) -> &'static str {
 		match self {
-			AudioDirection::Output => "hda-output",
-			AudioDirection::Duplex => "hda-duplex",
+			IntelHdaType::Output => "hda-output",
+			IntelHdaType::Duplex => "hda-duplex",
+			IntelHdaType::Micro => "hda-micro",
 		}
 	}
 }

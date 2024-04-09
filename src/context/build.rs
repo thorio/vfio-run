@@ -71,23 +71,34 @@ pub fn add_window(args: &mut ArgWriter, window: Window) {
 	};
 }
 
-pub fn add_audio(args: &mut ArgWriter, env: &mut EnvWriter, audio: Audio) {
-	match audio {
-		Audio::None => (),
-		Audio::Pipewire(runtime_dir, direction) => {
+pub fn add_audio_backend(args: &mut ArgWriter, env: &mut EnvWriter, audio_backend: AudioBackend) {
+	match audio_backend {
+		AudioBackend::None => (),
+		AudioBackend::Pipewire(runtime_dir) => {
 			env.add("PIPEWIRE_RUNTIME_DIR", runtime_dir.to_string_lossy())
 				.add("PIPEWIRE_LATENCY", "512/48000");
 
-			let hda = format!("{},audiodev=pw,mixer=off", direction.device_name());
-			args.add_many(vec![
-				"-audiodev",
-				"pipewire,id=pw",
-				"-device",
-				"intel-hda",
-				"-device",
-				&hda,
-			]);
+			args.add_many(vec!["-audiodev", "pipewire,id=snd"]);
 		}
+		AudioBackend::Spice => {
+			args.add_many(vec!["-audiodev", "spice,id=snd"]);
+		}
+	}
+}
+
+pub fn add_audio_frontend(args: &mut ArgWriter, audio_backend: AudioFrontend) {
+	match audio_backend {
+		AudioFrontend::None => (),
+		AudioFrontend::IntelHda(t) => intel_hda(args, "intel-hda", t),
+		AudioFrontend::IntelHdaIch9(t) => intel_hda(args, "ich9-intel-hda", t),
+		AudioFrontend::UsbAudio => {
+			args.add_many(vec!["-device", "qemu-xhci", "-device", "usb-audio,audiodev=snd"]);
+		}
+	};
+
+	fn intel_hda(args: &mut ArgWriter, hda_card: &str, hda_type: IntelHdaType) {
+		let hda = format!("{},audiodev=snd,mixer=off", hda_type.device_name());
+		args.add_many(vec!["-device", hda_card, "-device", &hda]);
 	}
 }
 

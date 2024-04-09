@@ -12,7 +12,7 @@ pub struct Args {
 	pub command: Command,
 
 	/// enable debug loglevel
-	#[arg(long)]
+	#[arg(long, global = true)]
 	pub debug: bool,
 }
 

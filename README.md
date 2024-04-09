@@ -49,6 +49,7 @@ This is a very concice guide and probably missing some stuff. If something doesn
   .vfio_user_networking()
   .virtio_disk("/dev/sdd")
   .pipewire("/run/user/1000") // your UID
+  .intel_hda(IntelHdaType::Output)
   ```
 
   > Windows will likely refuse to boot from VirtIO at first, this requires [some fiddling][virtio-dummy-disk].  
@@ -80,7 +81,7 @@ This is a very concice guide and probably missing some stuff. If something doesn
 - If you have a second GPU, add looking glass and spice, then try connecting with the looking glass client.
   ```rust
   .looking_glass(1000, 1000) // your UID and GID
-  .spice()
+  .spice_kvm()
   ```
 
 [single-gpu-passthrough]: https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
@@ -91,6 +92,10 @@ This is a very concice guide and probably missing some stuff. If something doesn
 [virtio-dummy-disk]: https://forum.proxmox.com/threads/vm-wont-start-after-disk-set-to-virtio.94646/
 
 # Known issues
+
+### Application doesn't want to run in VM
+
+Some applications or anticheats will refuse to run in a VM. In some cases, they can be fooled by configuring SMBIOS. Use `.smbios_auto()` to automatically read relevant values from the host system and build a credible config. Tested against VRChat EAC, others may or may not work.
 
 ### QEMU complains "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
 dmesg has lines like this:
