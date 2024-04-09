@@ -18,6 +18,7 @@ pub struct ContextBuilder {
 	networking: Networking,
 	looking_glass: LookingGlass,
 	spice: Spice,
+	spice_agent: SpiceAgent,
 	disks: Vec<Disk>,
 	pci: Vec<String>,
 	pat_dealloc: Vec<String>,
@@ -41,6 +42,7 @@ impl Default for ContextBuilder {
 			networking: Networking::None,
 			looking_glass: LookingGlass::No,
 			spice: Spice::No,
+			spice_agent: SpiceAgent::No,
 			disks: Vec::default(),
 			pci: Vec::default(),
 			pat_dealloc: Vec::default(),
@@ -216,6 +218,12 @@ impl ContextBuilder {
 		self
 	}
 
+	/// Adds Spice display, mouse and keyboard. Useful for Looking Glass as well.
+	pub fn spice_agent(mut self) -> Self {
+		self.spice_agent = SpiceAgent::Yes;
+		self
+	}
+
 	pub fn build(self) -> Context {
 		let mut arg_writer = ArgWriter::default();
 		let mut env_writer = EnvWriter::default();
@@ -236,6 +244,7 @@ impl ContextBuilder {
 		build::add_usb(&mut arg_writer, self.usb);
 		build::add_looking_glass(&mut arg_writer, &mut tmp_file_writer, self.looking_glass);
 		build::add_spice(&mut arg_writer, self.spice);
+		build::add_spice_agent(&mut arg_writer, self.spice_agent);
 
 		Context {
 			env: env_writer.get_envs(),

@@ -14,7 +14,8 @@ pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
 		.intel_hda(IntelHdaType::Output)
 		.vfio_user_networking()
 		.looking_glass(1000, 1000)
-		.spice_kvm();
+		.spice_kvm()
+		.spice_agent();
 
 	// This only applies when the --window flag is passed
 	if window {

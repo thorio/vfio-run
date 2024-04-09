@@ -174,16 +174,33 @@ pub fn add_looking_glass(args: &mut ArgWriter, tmp: &mut TmpFileWriter, config: 
 }
 
 pub fn add_spice(args: &mut ArgWriter, config: Spice) {
-	if config == Spice::No {
-		return;
-	}
+	match config {
+		Spice::No => (),
+		Spice::Yes => {
+			args.add_many(vec![
+				"-spice",
+				"port=5900,disable-ticketing=on",
+				"-device",
+				"virtio-keyboard-pci",
+				"-device",
+				"virtio-mouse-pci",
+			]);
+		}
+	};
+}
 
-	args.add_many(vec![
-		"-spice",
-		"port=5900,disable-ticketing=on",
-		"-device",
-		"virtio-keyboard-pci",
-		"-device",
-		"virtio-mouse-pci",
-	]);
+pub fn add_spice_agent(args: &mut ArgWriter, config: SpiceAgent) {
+	match config {
+		SpiceAgent::No => (),
+		SpiceAgent::Yes => {
+			args.add_many(vec![
+				"-device",
+				"virtio-serial-pci",
+				"-chardev",
+				"spicevmc,id=vdagent,name=vdagent",
+				"-device",
+				"virtserialport,chardev=vdagent,name=com.redhat.spice.0",
+			]);
+		}
+	};
 }

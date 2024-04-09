@@ -105,6 +105,12 @@ pub enum Spice {
 	Yes,
 }
 
+#[derive(PartialEq, Debug)]
+pub enum SpiceAgent {
+	No,
+	Yes,
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum SmBiosType {
 	BiosInformation = 0,

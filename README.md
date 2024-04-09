@@ -82,6 +82,7 @@ This is a very concice guide and probably missing some stuff. If something doesn
   ```rust
   .looking_glass(1000, 1000) // your UID and GID
   .spice_kvm()
+  .spice_agent()
   ```
 
 [single-gpu-passthrough]: https://github.com/QaidVoid/Complete-Single-GPU-Passthrough
