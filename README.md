@@ -7,6 +7,9 @@ For more digestible, beginner friendly methods see BlandManStudios on YouTube: [
 
 # vfio-run
 
+![GitHub License](https://img.shields.io/github/license/thorio/vfio-run?style=flat-square)
+![GitHub last commit](https://img.shields.io/github/last-commit/thorio/vfio-run?style=flat-square)
+
 This is a helper for running a qemu VM with VFIO GPU-passthrough in multiple configurations.  
 It allows you to configure your VM in a simple manner, skipping the endless pages of XML.  
 You can also pick and choose configs, devices and features in multiple profiles.
@@ -18,12 +21,12 @@ See `src/config.rs`, then just `cargo build` when you're done. If you don't have
 Rust statically links most dependencies, so you can then run the resulting binary on your host system.
 
 # Setup
-This is a very concice guide and probably missing some stuff. If something doesn't work or you get stuck, here's some supplementary reading: [Complete Single GPU Passthrough][single-gpu-passthrough], [Looking Glass Documentation][looking-glass].
+This is a very concise guide and probably missing some stuff. If something doesn't work or you get stuck, here's some supplementary reading: [Complete Single GPU Passthrough][single-gpu-passthrough], [Looking Glass Documentation][looking-glass].
 
 - Setup IOMMU and determine the PCI address(es) of your GPU. Refer to the [Arch wiki][iommu]
 
 - Install dependencies on the host
-  - **Arch:** `qemu-full libvirt edk2-ovmf`
+  - **Arch:** `qemu-full libvirt edk2-ovmf cpupower`
 
 - Install Windows normally on bare metal. Doing this allows you to dual-boot in addition to running in a VM.
   Probably unplug your other drives to protect them from any funny business on windows' part
@@ -92,6 +95,21 @@ This is a very concice guide and probably missing some stuff. If something doesn
 [virtio-win]: https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
 [virtio-dummy-disk]: https://forum.proxmox.com/threads/vm-wont-start-after-disk-set-to-virtio.94646/
 
+# Performance tuning
+
+For best performance, you should use these cpu options:
+```rust
+.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
+.cpu_governor("performance")
+.cpu_affinity("0-5,8-13") // depends on your CPU
+```
+
+The options for CPU pinning (`cpu_affinity`) will vary based on your CPU and alotted cores, see [taskset(1)][taskset] and [lstopo(1)][lstopo].  
+The example is valid for 6 cores with corresponding hyperthreading pairs on Ryzen 5800X and 7800X3D.
+
+[taskset]: https://man7.org/linux/man-pages/man1/taskset.1.html
+[lstopo]: https://linux.die.net/man/1/lstopo
+
 # Known issues
 
 ### Application doesn't want to run in VM
@@ -126,16 +144,3 @@ There are some other workarounds [here][workarounds-link].
 [gitlab-ticket]: https://gitlab.freedesktop.org/drm/amd/-/issues/2794
 [pat]: https://www.kernel.org/doc/Documentation/x86/pat.txt
 [workarounds-link]: https://github.com/Kinsteen/win10-gpu-passthrough#compute-mode---vfio-fix
-
-## Performance tuning
-
-For best performance, you should use these cpu options:
-```rust
-.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
-```
-
-Also look at CPU pinning, eg. `.cpu_affinity("0-5,8-13")` for 6 cores with corresponding hyperthreading pairs on Ryzen 5800X and 7800X3D.  
-This will vary based on your CPU and alotted cores, see [taskset(1)][taskset] and [lstopo(1)][lstopo]
-
-[taskset]: https://man7.org/linux/man-pages/man1/taskset.1.html
-[lstopo]: https://linux.die.net/man/1/lstopo
