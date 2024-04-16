@@ -1,6 +1,5 @@
-use std::process::Command;
-
 use anyhow::{bail, Result};
+use std::process::Command;
 
 pub fn run_command(cmd: &mut Command) -> Result<()> {
 	let output = cmd.output()?;

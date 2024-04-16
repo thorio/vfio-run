@@ -1,7 +1,6 @@
+use super::util::run_command;
 use anyhow::Result;
 use std::process::Command;
-
-use super::util::run_command;
 
 pub fn unbind_pci(address: &str) -> Result<()> {
 	run_cmd("nodedev-detach", address)
