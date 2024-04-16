@@ -25,6 +25,7 @@ pub struct ContextBuilder {
 	unload_drivers: Option<Vec<String>>,
 	usb: Vec<UsbDevice>,
 	cpu_affinity: Option<String>,
+	cpu_governor: Option<String>,
 }
 
 impl Default for ContextBuilder {
@@ -49,6 +50,7 @@ impl Default for ContextBuilder {
 			usb: Vec::default(),
 			unload_drivers: None,
 			cpu_affinity: None,
+			cpu_governor: None,
 		}
 	}
 }
@@ -62,9 +64,16 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Implements CPU pinning. See [taskset(1)](https://man7.org/linux/man-pages/man1/taskset.1.html)
+	/// Implements CPU pinning. See [taskset(1)](https://man7.org/linux/man-pages/man1/taskset.1.html).
 	pub fn cpu_affinity(mut self, affinity: impl Into<String>) -> Self {
 		self.cpu_affinity = Some(affinity.into());
+		self
+	}
+
+	/// Sets the CPU frequency governor. See [cpupower-frequency-set(1)](https://linux.die.net/man/1/cpupower-frequency-set).  
+	/// The governor is NOT reset on exit.
+	pub fn cpu_governor(mut self, governor: impl Into<String>) -> Self {
+		self.cpu_governor = Some(governor.into());
 		self
 	}
 
@@ -251,9 +260,10 @@ impl ContextBuilder {
 			args: arg_writer.get_args(),
 			pci: self.pci,
 			pat_dealloc: self.pat_dealloc,
-			cpu_affinity: self.cpu_affinity,
 			unload_drivers: self.unload_drivers,
 			tmp_files: tmp_file_writer.get_tmp_files(),
+			cpu_affinity: self.cpu_affinity,
+			cpu_governor: self.cpu_governor,
 		}
 	}
 }

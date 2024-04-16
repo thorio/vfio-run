@@ -71,8 +71,11 @@ pub enum AudioFrontend {
 #[derive(Debug)]
 #[allow(unused)]
 pub enum IntelHdaType {
+	/// HDA Audio Codec, output-only (line-out)
 	Output,
+	/// HDA Audio Codec, duplex (line-out, line-in)
 	Duplex,
+	/// HDA Audio Codec, duplex (speaker, microphone)
 	Micro,
 }
 
@@ -99,13 +102,13 @@ pub enum LookingGlass {
 	Yes(Uid, Gid),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub enum Spice {
 	No,
 	Yes,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub enum SpiceAgent {
 	No,
 	Yes,
@@ -148,7 +151,8 @@ pub struct Context {
 	pub args: Vec<String>,
 	pub pci: Vec<String>,
 	pub pat_dealloc: Vec<String>,
+	pub unload_drivers: Option<Vec<String>>,
 	pub tmp_files: Vec<TmpFile>,
 	pub cpu_affinity: Option<String>,
-	pub unload_drivers: Option<Vec<String>>,
+	pub cpu_governor: Option<String>,
 }

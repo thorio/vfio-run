@@ -1,9 +1,11 @@
 use crate::context::{Context, TmpFile};
 use anyhow::Result;
+use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::os::fd::AsRawFd;
 use std::process::Command;
 
+mod cpupower;
 mod modprobe;
 mod pat_dealloc;
 mod util;
@@ -12,9 +14,10 @@ mod virsh;
 const QEMU_CMD: &str = "qemu-system-x86_64";
 
 pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
-	ignore_sigint();
-
+	set_governor(context.cpu_governor.as_ref())?;
 	create_tmp_files(&context.tmp_files)?;
+
+	ignore_sigint();
 	detach_devices(&context)?;
 
 	log::info!("starting qemu");
@@ -33,6 +36,21 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 		// errors at this stage don't really need to be handled anymore,
 		// we just try to restore what we can and exit.
 		reattach_devices(&context)?;
+	}
+
+	Ok(())
+}
+
+fn set_governor(governor: Option<impl AsRef<OsStr>>) -> Result<(), ()> {
+	let Some(governor) = governor else {
+		return Ok(());
+	};
+
+	log::info!("setting cpu frequency governor");
+
+	if let Err(err) = cpupower::set_governor(governor) {
+		log::error!("{err}");
+		return Err(());
 	}
 
 	Ok(())
