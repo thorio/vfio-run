@@ -2,7 +2,10 @@
 name = "vfio-run"
 version = "0.1.0"
 edition = "2021"
-license = "GPL-3.0"
+readme = "README.md"
+license = "GPL-3"
+authors = ["thorou"]
+repository = "https://github.com/thorio/vfio-run"
 
 [dependencies]
 anyhow = "1.0.86"
@@ -12,3 +15,33 @@ log = "0.4.22"
 nix = {version = "0.29.0", features = ["user", "fs"] }
 smbios-lib = "0.9.1"
 stderrlog = "0.6.0"
+
+[profile.release]
+panic = "abort"
+strip = true
+lto = true
+
+[lints.rust]
+keyword_idents = "warn"
+non_ascii_idents = "forbid"
+noop_method_call = "warn"
+single_use_lifetimes = "warn"
+unused_crate_dependencies = "warn"
+unused_lifetimes = "deny"
+unused_qualifications = "warn"
+
+[lints.clippy]
+cognitive_complexity = "warn"
+dbg_macro = "warn"
+empty_structs_with_brackets = "warn"
+equatable_if_let = "warn"
+explicit_iter_loop = "warn"
+match_wildcard_for_single_variants = "warn"
+or_fun_call = "warn"
+question_mark = "warn"
+redundant_closure_for_method_calls = "warn"
+semicolon_if_nothing_returned = "warn"
+unwrap_used = "warn"
+use_self = "warn"
+used_underscore_binding = "warn"
+missing_panics_doc = "warn"

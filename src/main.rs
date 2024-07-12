@@ -43,7 +43,7 @@ fn run(window: bool, profile: Profile, skip_attach: bool) {
 	let context = get_context(window, &profile);
 
 	if runner::run(context, skip_attach).is_ok() {
-		log::info!("exit successful")
+		log::info!("exit successful");
 	}
 }
 

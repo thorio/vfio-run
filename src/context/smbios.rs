@@ -1,3 +1,6 @@
+// long type names make it less readable
+#![allow(clippy::redundant_closure_for_method_calls)]
+
 use super::{SmBiosMap, SmBiosMapExt, SmBiosType};
 use smbioslib::*;
 use std::any::type_name;
@@ -148,7 +151,7 @@ fn get_table<'a, T: SMBiosStruct<'a>>(dmi: &'a SMBiosData) -> Option<T> {
 		log::warn!(
 			"unable to get table for {}, will use defaults for every field",
 			type_name::<T>()
-		)
+		);
 	}
 
 	table

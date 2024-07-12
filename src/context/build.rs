@@ -117,13 +117,13 @@ pub fn add_networking(args: &mut ArgWriter, networking: Networking) {
 }
 
 pub fn add_pci(args: &mut ArgWriter, devices: &[String]) {
-	for address in devices.iter() {
+	for address in devices {
 		args.add("-device").add(format!("vfio-pci,host={address}"));
 	}
 }
 
 pub fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
-	for disk in disks.iter() {
+	for disk in &disks {
 		_ = match disk {
 			Disk::Raw(device) => args.add("-drive").add(raw_disk(device, "media=disk")),
 			Disk::Virtio(device) => args.add("-drive").add(raw_disk(device, "if=virtio")),
@@ -144,7 +144,7 @@ pub fn add_usb(args: &mut ArgWriter, devices: Vec<UsbDevice>) {
 	args.add("-usb");
 
 	for device in devices.into_iter() {
-		add_usb_device(args, device)
+		add_usb_device(args, device);
 	}
 }
 

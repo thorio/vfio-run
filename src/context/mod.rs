@@ -82,9 +82,9 @@ pub enum IntelHdaType {
 impl IntelHdaType {
 	pub fn device_name(&self) -> &'static str {
 		match self {
-			IntelHdaType::Output => "hda-output",
-			IntelHdaType::Duplex => "hda-duplex",
-			IntelHdaType::Micro => "hda-micro",
+			Self::Output => "hda-output",
+			Self::Duplex => "hda-duplex",
+			Self::Micro => "hda-micro",
 		}
 	}
 }
@@ -129,7 +129,7 @@ pub type SmBiosMap = HashMap<SmBiosType, HashMap<String, String>>;
 
 pub trait SmBiosMapExt {
 	fn add_field(&mut self, smbios_type: SmBiosType, key: impl Into<String>, value: impl Into<String>) {
-		self.add_fields(smbios_type, vec![(key, value)])
+		self.add_fields(smbios_type, vec![(key, value)]);
 	}
 
 	fn add_fields(&mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>);

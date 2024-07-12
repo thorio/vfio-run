@@ -54,7 +54,7 @@ fn ignore_sigint() {
 	// We ignore SIGINT, instead passing it to the wrapped QEMU process
 	// and then cleaning up after it exits
 	if let Err(err) = ctrlc::set_handler(|| ()) {
-		log::warn!("error setting SIGINT handler: {err}")
+		log::warn!("error setting SIGINT handler: {err}");
 	}
 }
 
@@ -155,16 +155,16 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
 
 	log::info!("unbinding pci devices");
 
-	for addr in addressses.iter().map(|a| a.as_ref()) {
+	for addr in addressses.iter().map(AsRef::as_ref) {
 		log::debug!("unbinding {addr}");
 		let result = virsh::unbind_pci(addr);
 
-		if result.is_err() {
-			log::error!("pci unbind {}", result.unwrap_err());
+		if let Err(e) = result {
+			log::error!("pci unbind {}", e);
 			return Err(unbound);
 		}
 
-		unbound.push(addr)
+		unbound.push(addr);
 	}
 
 	Ok(())
@@ -179,13 +179,13 @@ fn rebind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 
 	let mut had_error = false;
 
-	for addr in addressses.iter().map(|a| a.as_ref()) {
+	for addr in addressses.iter().map(AsRef::as_ref) {
 		log::debug!("rebinding {addr}");
 		let result = virsh::rebind_pci(addr);
 
 		// do not cancel rebind over one error, attempt rebinding the rest as well!
-		if result.is_err() {
-			log::error!("pci rebind {}", result.unwrap_err());
+		if let Err(e) = result {
+			log::error!("pci rebind {}", e);
 			had_error = true;
 		}
 	}

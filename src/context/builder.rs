@@ -1,5 +1,5 @@
 use super::build;
-use super::util::*;
+use super::util::{ArgWriter, EnvWriter, TmpFileWriter};
 use super::*;
 use nix::unistd::{Gid, Uid};
 use std::path::PathBuf;
@@ -192,7 +192,7 @@ impl ContextBuilder {
 
 	/// Unloads and Reloads the specified drivers before starting and after stopping the VM. e.g. nvidia drivers.
 	pub fn unloaded_drivers<T: Into<String>>(mut self, drivers: Vec<T>) -> Self {
-		let drivers = drivers.into_iter().map(|d| d.into()).collect::<Vec<_>>();
+		let drivers = drivers.into_iter().map(Into::into).collect::<Vec<_>>();
 		self.unload_drivers = Some(drivers);
 		self
 	}
