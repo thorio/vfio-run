@@ -22,7 +22,6 @@ strip = true
 lto = true
 
 [lints.rust]
-keyword_idents = "warn"
 non_ascii_idents = "forbid"
 noop_method_call = "warn"
 single_use_lifetimes = "warn"
