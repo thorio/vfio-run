@@ -215,7 +215,8 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Adds the [Looking Glass](https://looking-glass.io/) IVSHMEM device and sets the specified owner and group.
+	/// Adds the [Looking Glass](https://looking-glass.io/) IVSHMEM device
+	/// and creates the file with the specified owner and group.
 	pub fn looking_glass(mut self, owner: impl Into<Uid>, group: impl Into<Gid>) -> Self {
 		self.looking_glass = LookingGlass::Yes(owner.into(), group.into());
 		self
@@ -227,7 +228,7 @@ impl ContextBuilder {
 		self
 	}
 
-	/// Adds Spice display, mouse and keyboard. Useful for Looking Glass as well.
+	/// Adds Spice vdagent for clipboard synchronisation. Useful for Looking Glass as well.
 	pub fn spice_agent(mut self) -> Self {
 		self.spice_agent = SpiceAgent::Yes;
 		self
