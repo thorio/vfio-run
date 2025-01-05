@@ -27,6 +27,8 @@ This is a very concise guide and probably missing some stuff. If something doesn
 
 - Install dependencies on the host
   - **Arch:** `qemu-full libvirt edk2-ovmf cpupower`
+  - **Debian:** `qemu-system libvirt-daemon-system ovmf linux-cpupower`
+  - **Ubuntu:** `qemu-system libvirt-daemon-system ovmf cpupower-gui`
 
 - Install Windows normally on bare metal. Doing this allows you to dual-boot in addition to running in a VM.
   Probably unplug your other drives to protect them from any funny business on windows' part
@@ -48,7 +50,7 @@ This is a very concise guide and probably missing some stuff. If something doesn
 
 - Add OVMF bios, VirtIO networking, VirtIO disk, audio, then check if it works
   ```rust
-  .ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
+  .ovmf_bios("/usr/share/edk2/x64/OVMF.fd") // path may need to be adjusted
   .vfio_user_networking()
   .virtio_disk("/dev/sdd")
   .pipewire("/run/user/1000") // your UID
