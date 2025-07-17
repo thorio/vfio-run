@@ -119,6 +119,10 @@ The example is valid for 6 cores with corresponding hyperthreading pairs on Ryze
 Some applications or anticheats will refuse to run in a VM. In some cases, they can be fooled by configuring SMBIOS. Use `.smbios_auto()` to automatically read relevant values from the host system and build a credible config. Tested against VRChat EAC, others may or may not work.
 
 ### QEMU complains "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
+
+> [!NOTE]
+> With kernel `6.15.4-arch2-1` and nvidia drivers 575.64, this doesn't seem to be happening on my machine anymore. If you're running older versions, try updating.
+
 dmesg has lines like this:
 ```
 [Sun Mar 19 13:57:12 2023] x86/PAT: CPU 0/KVM:1329 conflicting memory types f800000000-fc00000000 write-combining<->uncached-minus
