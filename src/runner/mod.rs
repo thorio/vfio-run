@@ -1,7 +1,6 @@
 use crate::context::{Context, TmpFile};
 use anyhow::Result;
 use std::fs::{self, File};
-use std::os::fd::AsRawFd;
 
 mod cpupower;
 mod modprobe;
@@ -70,9 +69,10 @@ fn create_tmp_files(files: &[TmpFile]) -> Result<(), ()> {
 
 fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
 	fs::remove_file(&tmp_file.path).ok();
+
 	let file = File::create(&tmp_file.path)?;
-	nix::unistd::fchown(file.as_raw_fd(), Some(tmp_file.uid), Some(tmp_file.gid))?;
-	nix::sys::stat::fchmod(file.as_raw_fd(), tmp_file.mode)?;
+	nix::unistd::fchown(&file, Some(tmp_file.uid), Some(tmp_file.gid))?;
+	nix::sys::stat::fchmod(&file, tmp_file.mode)?;
 
 	Ok(())
 }
