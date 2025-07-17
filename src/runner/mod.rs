@@ -1,6 +1,5 @@
 use crate::context::{Context, TmpFile};
 use anyhow::Result;
-use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::os::fd::AsRawFd;
 
@@ -12,7 +11,7 @@ mod util;
 mod virsh;
 
 pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
-	set_governor(context.cpu_governor.as_ref())?;
+	set_governor(context.cpu_governor.as_deref())?;
 	create_tmp_files(&context.tmp_files)?;
 
 	ignore_sigint();
@@ -23,7 +22,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	let result = qemu::run_qemu(&context);
 
 	if let Err(e) = result {
-		log::error!("error running qemu: {}", e);
+		log::error!("error running qemu: {e}");
 	}
 
 	if !skip_attach {
@@ -35,7 +34,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	Ok(())
 }
 
-fn set_governor(governor: Option<impl AsRef<OsStr>>) -> Result<(), ()> {
+fn set_governor(governor: Option<&str>) -> Result<(), ()> {
 	let Some(governor) = governor else {
 		return Ok(());
 	};
@@ -125,7 +124,7 @@ fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 		log::info!("unloading drivers");
 		log::debug!("unloading {drivers:?}");
 		if let Err(msg) = modprobe::unload(drivers) {
-			log::error!("unloading {}", msg);
+			log::error!("unloading {msg}");
 			return Err(());
 		}
 	}
@@ -138,7 +137,7 @@ fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 		log::info!("loading drivers");
 		log::debug!("loading {drivers:?}");
 		if let Err(msg) = modprobe::load(drivers) {
-			log::error!("loading {}", msg);
+			log::error!("loading {msg}");
 			return Err(());
 		}
 	}
@@ -146,7 +145,7 @@ fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	Ok(())
 }
 
-fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
+fn unbind_pci(addressses: &[impl AsRef<str>]) -> Result<(), Vec<&'_ str>> {
 	let mut unbound = vec![];
 
 	if addressses.is_empty() {
@@ -157,10 +156,9 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
 
 	for addr in addressses.iter().map(AsRef::as_ref) {
 		log::debug!("unbinding {addr}");
-		let result = virsh::unbind_pci(addr);
 
-		if let Err(e) = result {
-			log::error!("pci unbind {}", e);
+		if let Err(e) = virsh::unbind_pci(addr) {
+			log::error!("pci unbind {e}");
 			return Err(unbound);
 		}
 
@@ -170,7 +168,7 @@ fn unbind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), Vec<&'_ str>> {
 	Ok(())
 }
 
-fn rebind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
+fn rebind_pci(addressses: &[impl AsRef<str>]) -> Result<(), ()> {
 	if addressses.is_empty() {
 		return Ok(());
 	}
@@ -185,7 +183,7 @@ fn rebind_pci<T: AsRef<str>>(addressses: &[T]) -> Result<(), ()> {
 
 		// do not cancel rebind over one error, attempt rebinding the rest as well!
 		if let Err(e) = result {
-			log::error!("pci rebind {}", e);
+			log::error!("pci rebind {e}");
 			had_error = true;
 		}
 	}

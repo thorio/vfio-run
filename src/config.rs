@@ -3,7 +3,7 @@ use crate::context::{ContextBuilder, IntelHdaType, Vga};
 
 // Look at the readme for setup instructions. The builder functions also have doc comments.
 
-pub fn get_builder(window: bool, profile: &Profile) -> ContextBuilder {
+pub fn get_builder(profile: &Profile, window: bool) -> ContextBuilder {
 	// These options always apply
 	let mut builder = ContextBuilder::default()
 		.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")

@@ -124,7 +124,7 @@ pub fn add_pci(args: &mut ArgWriter, devices: &[String]) {
 
 pub fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
 	for disk in &disks {
-		_ = match disk {
+		match disk {
 			Disk::Raw(device) => args.add("-drive").add(raw_disk(device, "media=disk")),
 			Disk::Virtio(device) => args.add("-drive").add(raw_disk(device, "if=virtio")),
 		};

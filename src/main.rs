@@ -10,7 +10,7 @@ mod runner;
 fn main() {
 	let cli = cli::parse();
 	init_logger(cli.debug);
-	log::debug!("{:?}", cli);
+	log::debug!("{cli:?}");
 
 	if !Uid::effective().is_root() {
 		log::warn!("running as non-root, here be dragons");
@@ -21,38 +21,38 @@ fn main() {
 			profile,
 			window,
 			skip_attach,
-		} => run(window, profile, skip_attach),
+		} => run(profile, window, skip_attach),
 		Command::Detach { profile } => detach(profile),
 		Command::Attach { profile } => attach(profile),
 	}
 }
 
 fn detach(profile: Profile) {
-	let context = get_context(false, &profile);
+	let context = get_context(&profile, false);
 
 	runner::detach_devices(&context).ok();
 }
 
 fn attach(profile: Profile) {
-	let context = get_context(false, &profile);
+	let context = get_context(&profile, false);
 
 	runner::reattach_devices(&context).ok();
 }
 
-fn run(window: bool, profile: Profile, skip_attach: bool) {
-	let context = get_context(window, &profile);
+fn run(profile: Profile, window: bool, skip_attach: bool) {
+	let context = get_context(&profile, window);
 
 	if runner::run(context, skip_attach).is_ok() {
 		log::info!("exit successful");
 	}
 }
 
-fn get_context(window: bool, profile: &Profile) -> Context {
-	let builder = config::get_builder(window, profile);
-	log::debug!("{:?}", builder);
+fn get_context(profile: &Profile, window: bool) -> Context {
+	let builder = config::get_builder(profile, window);
+	log::debug!("{builder:?}");
 
 	let context = builder.build();
-	log::debug!("{:?}", context);
+	log::debug!("{context:?}");
 
 	context
 }
