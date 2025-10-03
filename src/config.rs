@@ -9,7 +9,7 @@ pub fn configure(config: &mut ContextBuilder, options: &Options) {
 		.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
 		.ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
 		.smbios_auto()
-		.virtio_disk("/dev/sdd")
+		.virtio_disk("/dev/disk/by-id/wwn-0x7666696f2d72756e")
 		.pipewire("/run/user/1000")
 		.intel_hda(IntelHdaType::Output)
 		.vfio_user_networking()
@@ -36,6 +36,6 @@ pub fn configure(config: &mut ContextBuilder, options: &Options) {
 			.cpu_affinity("0-5,8-13")
 			.pci_device("0000:01:00.0")
 			.pci_device("0000:01:00.1")
-			.unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
+			.unloaded_drivers(["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
 	};
 }
