@@ -46,6 +46,12 @@ pub struct Options {
 	#[arg(value_enum)]
 	pub profile: Profile,
 
+	#[arg(long, short, value_enum, default_value_t)]
+	pub cpu: Cpu,
+
+	#[arg(long, short, value_enum, default_value_t)]
+	pub graphics: Graphics,
+
 	/// open qemu GUI
 	#[arg(long, short)]
 	pub window: bool,
@@ -53,9 +59,20 @@ pub struct Options {
 
 #[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum Profile {
-	/// start with virtual VGA
-	Slim,
+	Game,
+	Work,
+}
 
-	/// start with GPU passthrough
+#[derive(Clone, Copy, ValueEnum, Debug, Default)]
+pub enum Cpu {
+	#[default]
+	Slim,
 	Full,
+}
+
+#[derive(Clone, Copy, ValueEnum, Debug, Default)]
+pub enum Graphics {
+	#[default]
+	Virtual,
+	Passthrough,
 }
