@@ -35,7 +35,7 @@ This is a very concise guide and probably missing some stuff. If something doesn
 
 - Configure a minimal config to get going:
   ```rust
-  let builder = ContextBuilder::default()
+  config
   	.smp("sockets=1,cores=4,threads=2")
   	.ram("8G")
   	.raw_disk("/dev/sdd") // the block device you installed Windows on

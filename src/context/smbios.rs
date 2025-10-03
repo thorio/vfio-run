@@ -1,7 +1,7 @@
 // long type names make it less readable
 #![allow(clippy::redundant_closure_for_method_calls)]
 
-use super::{SmBiosMap, SmBiosMapExt, SmBiosType};
+use super::{SmBiosMap, SmBiosType};
 use smbioslib::*;
 use std::any::type_name;
 
@@ -9,7 +9,8 @@ use std::any::type_name;
 /// Default values taken from https://docs.vrchat.com/docs/using-vrchat-in-a-virtual-machine#qemu
 pub fn populate_auto(map: &mut SmBiosMap) {
 	let Ok(dmi) = table_load_from_device() else {
-		panic!("unable to load dmi tables, cannot retrieve smbios parameters");
+		log::error!("unable to load dmi tables, cannot retrieve smbios parameters");
+		return;
 	};
 
 	populate_bios_information(map, get_table::<SMBiosInformation>(&dmi));
@@ -149,7 +150,7 @@ fn get_table<'a, T: SMBiosStruct<'a>>(dmi: &'a SMBiosData) -> Option<T> {
 
 	if table.is_none() {
 		log::warn!(
-			"unable to get table for {}, will use defaults for every field",
+			"unable to get table for {}, using defaults for every field",
 			type_name::<T>()
 		);
 	}
@@ -158,19 +159,11 @@ fn get_table<'a, T: SMBiosStruct<'a>>(dmi: &'a SMBiosData) -> Option<T> {
 }
 
 fn get_field<T, R>(table: &Option<T>, f: impl FnOnce(&T) -> Option<R>, default: impl Into<R>) -> R {
-	let Some(table) = table else {
-		return default.into();
-	};
-
-	f(table).unwrap_or_else(|| default.into())
+	table.as_ref().and_then(f).unwrap_or_else(|| default.into())
 }
 
 fn get_string_field<T>(table: &Option<T>, f: impl FnOnce(&T) -> SMBiosString, default: impl Into<String>) -> String {
-	let Some(table) = table else {
-		return default.into();
-	};
-
-	f(table).to_string()
+	get_field(table, |t| Some(f(t).to_string()), default)
 }
 
 fn get_uuid_field<T>(
@@ -178,11 +171,35 @@ fn get_uuid_field<T>(
 	f: impl FnOnce(&T) -> Option<SystemUuidData>,
 	default: impl Into<String>,
 ) -> String {
-	if let Some(table) = table {
-		if let Some(SystemUuidData::Uuid(uuid)) = f(table) {
-			return uuid.to_string();
-		}
+	if let Some(SystemUuidData::Uuid(uuid)) = table.as_ref().and_then(f) {
+		return uuid.to_string();
 	}
 
 	default.into()
+}
+
+pub trait SmBiosMapExt {
+	fn add_field(&mut self, smbios_type: SmBiosType, key: impl Into<String>, value: impl Into<String>) {
+		self.add_fields(smbios_type, vec![(key, value)]);
+	}
+
+	fn add_fields(
+		&mut self,
+		smbios_type: SmBiosType,
+		pairs: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+	);
+}
+
+impl SmBiosMapExt for SmBiosMap {
+	fn add_fields(
+		&mut self,
+		smbios_type: SmBiosType,
+		pairs: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+	) {
+		let values = self.entry(smbios_type).or_default();
+
+		for (key, value) in pairs {
+			values.insert(key.into(), value.into());
+		}
+	}
 }

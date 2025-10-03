@@ -25,9 +25,7 @@ pub fn run(context: Context, skip_attach: bool) -> Result<(), ()> {
 	}
 
 	if !skip_attach {
-		// errors at this stage don't really need to be handled anymore,
-		// we just try to restore what we can and exit.
-		reattach_devices(&context)?;
+		reattach_devices(&context);
 	}
 
 	Ok(())
@@ -48,9 +46,9 @@ fn set_governor(governor: Option<&str>) -> Result<(), ()> {
 	Ok(())
 }
 
+// We ignore SIGINT, let the wrapped QEMU process handle it
+// and then clean up after it exits
 fn ignore_sigint() {
-	// We ignore SIGINT, instead passing it to the wrapped QEMU process
-	// and then cleaning up after it exits
 	if let Err(err) = ctrlc::set_handler(|| ()) {
 		log::warn!("error setting SIGINT handler: {err}");
 	}
@@ -77,24 +75,24 @@ fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
 	Ok(())
 }
 
-pub fn reattach_devices(context: &Context) -> Result<(), ()> {
+pub fn reattach_devices(context: &Context) {
 	pat_dealloc(&context.pat_dealloc);
-	rebind_pci(&context.pci)?;
+	rebind_pci(&context.pci);
 	reload_drivers(context.unload_drivers.as_ref())
 }
 
 pub fn detach_devices(context: &Context) -> Result<(), ()> {
 	if unload_drivers(context.unload_drivers.as_ref()).is_err() {
 		log::info!("attempting to reload drivers");
-		reload_drivers(context.unload_drivers.as_ref()).ok();
+		reload_drivers(context.unload_drivers.as_ref());
 		return Err(());
 	}
 
 	if let Err(unbound) = unbind_pci(&context.pci) {
 		if !unbound.is_empty() {
 			log::info!("attempting to rebind pci devices");
-			rebind_pci(&unbound).ok();
-			reload_drivers(context.unload_drivers.as_ref()).ok();
+			rebind_pci(&unbound);
+			reload_drivers(context.unload_drivers.as_ref());
 		}
 
 		return Err(());
@@ -132,17 +130,14 @@ fn unload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
 	Ok(())
 }
 
-fn reload_drivers(drivers: Option<&Vec<String>>) -> Result<(), ()> {
+fn reload_drivers(drivers: Option<&Vec<String>>) {
 	if let Some(drivers) = drivers {
 		log::info!("loading drivers");
 		log::debug!("loading {drivers:?}");
 		if let Err(msg) = modprobe::load(drivers) {
 			log::error!("loading {msg}");
-			return Err(());
 		}
 	}
-
-	Ok(())
 }
 
 fn unbind_pci(addressses: &[impl AsRef<str>]) -> Result<(), Vec<&'_ str>> {
@@ -168,29 +163,20 @@ fn unbind_pci(addressses: &[impl AsRef<str>]) -> Result<(), Vec<&'_ str>> {
 	Ok(())
 }
 
-fn rebind_pci(addressses: &[impl AsRef<str>]) -> Result<(), ()> {
+fn rebind_pci(addressses: &[impl AsRef<str>]) {
 	if addressses.is_empty() {
-		return Ok(());
+		return;
 	}
 
 	log::info!("rebinding pci devices");
-
-	let mut had_error = false;
 
 	for addr in addressses.iter().map(AsRef::as_ref) {
 		log::debug!("rebinding {addr}");
 		let result = virsh::rebind_pci(addr);
 
-		// do not cancel rebind over one error, attempt rebinding the rest as well!
+		// keep going on error, attempt rebinding the rest as well
 		if let Err(e) = result {
 			log::error!("pci rebind {e}");
-			had_error = true;
 		}
-	}
-
-	if had_error {
-		Err(())
-	} else {
-		Ok(())
 	}
 }

@@ -1,5 +1,5 @@
-use cli::{Command, Profile};
-use context::Context;
+use cli::{Command, Options};
+use context::{Context, ContextBuilder};
 use nix::unistd::Uid;
 
 mod cli;
@@ -17,38 +17,35 @@ fn main() {
 	}
 
 	match cli.command {
-		Command::Run {
-			profile,
-			window,
-			skip_attach,
-		} => run(profile, window, skip_attach),
-		Command::Detach { profile } => detach(profile),
-		Command::Attach { profile } => attach(profile),
+		Command::Run { config, skip_attach } => run(config, skip_attach),
+		Command::Detach { config } => detach(config),
+		Command::Attach { config } => attach(config),
 	}
 }
 
-fn detach(profile: Profile) {
-	let context = get_context(&profile, false);
+fn detach(config: Options) {
+	let context = get_context(&config);
 
 	runner::detach_devices(&context).ok();
 }
 
-fn attach(profile: Profile) {
-	let context = get_context(&profile, false);
+fn attach(config: Options) {
+	let context = get_context(&config);
 
-	runner::reattach_devices(&context).ok();
+	runner::reattach_devices(&context);
 }
 
-fn run(profile: Profile, window: bool, skip_attach: bool) {
-	let context = get_context(&profile, window);
+fn run(config: Options, skip_attach: bool) {
+	let context = get_context(&config);
 
 	if runner::run(context, skip_attach).is_ok() {
 		log::info!("exit successful");
 	}
 }
 
-fn get_context(profile: &Profile, window: bool) -> Context {
-	let builder = config::get_builder(profile, window);
+fn get_context(config: &Options) -> Context {
+	let mut builder = ContextBuilder::default();
+	config::configure(&mut builder, config);
 	log::debug!("{builder:?}");
 
 	let context = builder.build();

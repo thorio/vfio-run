@@ -36,11 +36,13 @@ pub struct EnvWriter {
 impl EnvWriter {
 	pub fn add(&mut self, key: impl Into<String>, value: impl Into<String>) -> &'_ mut Self {
 		let key = key.into();
+		let value = value.into();
+
 		if self.env.contains_key(&key) {
-			panic!("env conflict: {}", key);
+			log::warn!("confict for env {key}, using value {value}");
 		}
 
-		self.env.insert(key, value.into());
+		self.env.insert(key, value);
 		self
 	}
 

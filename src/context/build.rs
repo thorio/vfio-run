@@ -97,7 +97,13 @@ pub fn add_audio_frontend(args: &mut ArgWriter, audio_backend: AudioFrontend) {
 	};
 
 	fn intel_hda(args: &mut ArgWriter, hda_card: &str, hda_type: IntelHdaType) {
-		let hda = format!("{},audiodev=snd,mixer=off", hda_type.device_name());
+		let device_name = match hda_type {
+			IntelHdaType::Output => "hda-output",
+			IntelHdaType::Duplex => "hda-duplex",
+			IntelHdaType::Micro => "hda-micro",
+		};
+
+		let hda = format!("{},audiodev=snd,mixer=off", device_name);
 		args.add_many(vec!["-device", hda_card, "-device", &hda]);
 	}
 }

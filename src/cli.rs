@@ -1,13 +1,13 @@
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
-pub fn parse() -> Args {
-	Args::parse()
+pub fn parse() -> CliArgs {
+	CliArgs::parse()
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
-pub struct Args {
+pub struct CliArgs {
 	#[command(subcommand)]
 	pub command: Command,
 
@@ -20,12 +20,8 @@ pub struct Args {
 pub enum Command {
 	/// Run the VM, detaching and attaching as required.
 	Run {
-		#[arg(value_enum)]
-		profile: Profile,
-
-		/// open qemu GUI
-		#[arg(long, short)]
-		window: bool,
+		#[command(flatten)]
+		config: Options,
 
 		/// skip re-attaching PCI devices and such
 		#[arg(long, short)]
@@ -34,18 +30,28 @@ pub enum Command {
 
 	/// Unload drivers and detach devices
 	Detach {
-		#[arg(value_enum)]
-		profile: Profile,
+		#[command(flatten)]
+		config: Options,
 	},
 
 	/// Reload drivers and reattach devices
 	Attach {
-		#[arg(value_enum)]
-		profile: Profile,
+		#[command(flatten)]
+		config: Options,
 	},
 }
 
-#[derive(Clone, ValueEnum, Debug)]
+#[derive(Args, Debug)]
+pub struct Options {
+	#[arg(value_enum)]
+	pub profile: Profile,
+
+	/// open qemu GUI
+	#[arg(long, short)]
+	pub window: bool,
+}
+
+#[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum Profile {
 	/// start with virtual VGA
 	Slim,

@@ -9,7 +9,7 @@ mod util;
 
 pub use builder::ContextBuilder;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum UsbDevice {
 	HostVidPid { vendor: u16, product: u16 },
 	Device(String),
@@ -23,7 +23,7 @@ pub struct TmpFile {
 	pub mode: Mode,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[allow(unused)]
 pub enum Vga {
 	None,
@@ -35,32 +35,32 @@ pub enum Vga {
 	Qxl,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Window {
 	None,
 	Gtk,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BiosType {
 	Default,
 	Ovmf(PathBuf),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Disk {
 	Raw(PathBuf),
 	Virtio(PathBuf),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum AudioBackend {
 	None,
 	Pipewire(PathBuf),
 	Spice,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum AudioFrontend {
 	None,
 	IntelHda(IntelHdaType),
@@ -68,7 +68,7 @@ pub enum AudioFrontend {
 	UsbAudio,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[allow(unused)]
 pub enum IntelHdaType {
 	/// HDA Audio Codec, output-only (line-out)
@@ -79,36 +79,26 @@ pub enum IntelHdaType {
 	Micro,
 }
 
-impl IntelHdaType {
-	pub fn device_name(&self) -> &'static str {
-		match self {
-			Self::Output => "hda-output",
-			Self::Duplex => "hda-duplex",
-			Self::Micro => "hda-micro",
-		}
-	}
-}
-
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Networking {
 	None,
 	User,
 	VirtioUser,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LookingGlass {
 	No,
 	Yes(Uid, Gid),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Spice {
 	No,
 	Yes,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum SpiceAgent {
 	No,
 	Yes,
@@ -126,24 +116,6 @@ pub enum SmBiosType {
 }
 
 pub type SmBiosMap = HashMap<SmBiosType, HashMap<String, String>>;
-
-pub trait SmBiosMapExt {
-	fn add_field(&mut self, smbios_type: SmBiosType, key: impl Into<String>, value: impl Into<String>) {
-		self.add_fields(smbios_type, vec![(key, value)]);
-	}
-
-	fn add_fields(&mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>);
-}
-
-impl SmBiosMapExt for SmBiosMap {
-	fn add_fields(&mut self, smbios_type: SmBiosType, pairs: Vec<(impl Into<String>, impl Into<String>)>) {
-		let values = self.entry(smbios_type).or_default();
-
-		for (key, value) in pairs {
-			values.insert(key.into(), value.into());
-		}
-	}
-}
 
 #[derive(Debug)]
 pub struct Context {
