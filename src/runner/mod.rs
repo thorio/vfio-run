@@ -78,7 +78,7 @@ fn create_tmp_file(tmp_file: &TmpFile) -> Result<()> {
 pub fn reattach_devices(context: &Context) {
 	pat_dealloc(&context.pat_dealloc);
 	rebind_pci(&context.pci);
-	reload_drivers(context.unload_drivers.as_ref())
+	reload_drivers(context.unload_drivers.as_ref());
 }
 
 pub fn detach_devices(context: &Context) -> Result<(), ()> {

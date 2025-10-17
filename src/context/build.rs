@@ -48,7 +48,7 @@ pub fn add_smbios(args: &mut ArgWriter, smbios: SmBiosMap) {
 		let mut buffer = format!("type={}", smbios_type as isize);
 
 		for (key, value) in fields {
-			write!(&mut buffer, ",{}={}", key, value.replace(',', ",,")).unwrap();
+			write!(&mut buffer, ",{}={}", key, value.replace(',', ",,")).expect("write to String is infallible");
 		}
 
 		args.add("-smbios").add(buffer);
