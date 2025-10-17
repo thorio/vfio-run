@@ -1,0 +1,25 @@
+name: check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+
+env:
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+
+      - name: setup rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: check formatting
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy -- -D warnings
