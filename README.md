@@ -121,7 +121,7 @@ The example is valid for 6 cores with corresponding hyperthreading pairs on Ryze
 
 ### Application doesn't want to run in VM
 
-Some applications or anticheats will refuse to run in a VM. In some cases, they can be fooled by configuring SMBIOS. Use `.smbios_auto()` to automatically read relevant values from the host system and build a credible config. Tested with VRChat EAC, others may or may not work.
+Some applications or anticheats will refuse to run in a VM. In some cases, they can be placated by configuring SMBIOS. Use `.smbios_auto()` to automatically read relevant values from the host system and build a credible config. Tested with VRChat EAC, others may or may not work.
 
 ### QEMU warnings "Failed to mmap 0000:01:00.0 BAR 1. Performance may be slow"
 See [this issue](https://github.com/thorio/vfio-run/issues/1).
