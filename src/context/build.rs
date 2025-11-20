@@ -138,7 +138,7 @@ pub fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
 
 	fn raw_disk(device: &Path, options: &str) -> String {
 		let dev = device.to_string_lossy();
-		format!("file={dev},format=raw,{options}")
+		format!("file={dev},format=raw,{options},cache=none,discard=on,aio=threads")
 	}
 }
 
