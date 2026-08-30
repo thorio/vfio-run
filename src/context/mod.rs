@@ -51,6 +51,7 @@ pub enum BiosType {
 pub enum Disk {
 	Raw(PathBuf),
 	Virtio(PathBuf),
+	CdRom(PathBuf),
 }
 
 #[derive(Clone, Debug)]

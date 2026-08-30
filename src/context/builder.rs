@@ -124,6 +124,12 @@ impl ContextBuilder {
 		self
 	}
 
+	/// Adds a disc drive with the specified image.
+	pub fn cdrom(&mut self, path: impl Into<PathBuf>) -> &mut Self {
+		self.disks.push(Disk::CdRom(path.into()));
+		self
+	}
+
 	/// Adds a pipewire audio backend. `runtime_dir` is typically `/run/user/$UID`.  
 	/// Incomplete on its own, requires audio frontend to be configured.
 	pub fn pipewire(&mut self, runtime_dir: impl Into<PathBuf>) -> &mut Self {

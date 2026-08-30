@@ -130,15 +130,22 @@ pub fn add_pci(args: &mut ArgWriter, devices: &[String]) {
 
 pub fn add_disks(args: &mut ArgWriter, disks: Vec<Disk>) {
 	for disk in &disks {
+		args.add("-drive");
 		match disk {
-			Disk::Raw(device) => args.add("-drive").add(raw_disk(device, "media=disk")),
-			Disk::Virtio(device) => args.add("-drive").add(raw_disk(device, "if=virtio")),
+			Disk::Raw(device) => args.add(raw_disk(device, "media=disk")),
+			Disk::Virtio(device) => args.add(raw_disk(device, "if=virtio")),
+			Disk::CdRom(device) => args.add(cdrom(device)),
 		};
 	}
 
 	fn raw_disk(device: &Path, options: &str) -> String {
 		let dev = device.to_string_lossy();
 		format!("file={dev},format=raw,{options},cache=none,discard=on,aio=threads")
+	}
+
+	fn cdrom(device: &Path) -> String {
+		let dev = device.to_string_lossy();
+		format!("media=cdrom,format=raw,file={dev}")
 	}
 }
 
