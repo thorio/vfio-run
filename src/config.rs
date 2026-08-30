@@ -1,41 +1,58 @@
 use crate::cli::*;
 use crate::context::*;
 
-// Look at the readme for setup instructions. The builder functions also have doc comments.
+const PCI_GPU: &str = "0000:01:00.0";
+const PCI_GPU_AUDIO: &str = "0000:01:00.1";
+const PCI_USB: &str = "0000:05:00.0";
 
-pub fn configure(config: &mut ContextBuilder, options: &Options) {
-	// These options always apply
+pub fn configure(config: &mut ContextBuilder, cli: &Options) {
 	config
-		.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
-		.ovmf_bios("/usr/share/edk2/x64/OVMF.fd")
-		.smbios_auto()
-		.virtio_disk("/dev/disk/by-id/wwn-0x7666696f2d72756e")
-		.pipewire("/run/user/1000")
+		.cpu("host,topoext,hv_passthrough")
+		.ovmf_bios("/usr/share/edk2/x64/OVMF.4m.fd")
 		.intel_hda(IntelHdaType::Output)
+		.spice_audio()
 		.vfio_user_networking()
 		.looking_glass(1000, 1000)
 		.spice_kvm()
 		.spice_agent();
 
-	// This only applies when the --window flag is passed
-	if options.window {
-		config.window().vga(Vga::Qxl).usb_tablet();
+	if cli.window {
+		config.window().usb_tablet();
 	}
 
-	// These options only apply when the VM is started in the given profile
-	match options.profile {
-		Profile::Slim => config
-			.ram("8G")
-			.smp("sockets=1,cores=2,threads=2")
-			.cpu_affinity("0-1,8-9")
-			.vga(Vga::Qxl),
-
-		Profile::Full => config
-			.ram("24G")
+	match cli.cpu {
+		Cpu::Full => config
+			.ram("32G")
 			.smp("sockets=1,cores=6,threads=2")
 			.cpu_affinity("0-5,8-13")
-			.pci_device("0000:01:00.0")
-			.pci_device("0000:01:00.1")
-			.unloaded_drivers(["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
+			.cpu_governor("performance"),
+		Cpu::Slim => config
+			.ram("8G")
+			.smp("sockets=1,cores=2,threads=2")
+			.cpu_affinity("0-1,8-9"),
+	};
+
+	match cli.graphics {
+		Graphics::Virtual => config.vga(Vga::Qxl),
+		Graphics::Passthrough => config
+			.pci_device(PCI_GPU)
+			.pci_device(PCI_GPU_AUDIO)
+			.unloaded_drivers(vec!["nvidia_drm", "nvidia_uvm", "nvidia_modeset", "nvidia"]),
+	};
+
+	match cli.profile {
+		Profile::Game => config
+			.cpu("host,topoext,kvm=off,hv_frequencies,hv_time,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff,hv_vendor_id=thisisnotavm")
+			.smbios_auto()
+			.virtio_disk("/dev/zvol/storage/vm/taurine")
+			.virtio_disk("/dev/disk/by-id/wwn-0x5002538d411f8d4e")
+			.pci_device(PCI_USB),
+		Profile::Work => config
+			.virtio_disk("/dev/zvol/storage/vm/novalectra")
+			.intel_hda(IntelHdaType::Duplex),
+		Profile::Sandbox10 => config
+			.virtio_disk("/dev/zvol/storage/vm/win10-sandbox"),
+		Profile::Sandbox11 => config
+			.virtio_disk("/dev/zvol/storage/vm/win11-sandbox"),
 	};
 }
